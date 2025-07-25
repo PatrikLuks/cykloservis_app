@@ -1,5 +1,3 @@
-# cykloservis_app
-
 # ServisKol
 
 ![CI](https://github.com/<VASE-REPO-URL>/actions/workflows/ci.yml/badge.svg)
