@@ -35,7 +35,7 @@ export default function Register() {
     <div className="register-container">
       <h2>Registrace</h2>
       <form className="register-form" onSubmit={handleSubmit}>
-        <input type="email" name="email" placeholder="Email" value={form.email} onChange={handleChange} required />
+        <input type="email" name="email" placeholder="E-mail" value={form.email} onChange={handleChange} required />
         <input type="password" name="password" placeholder="Heslo" value={form.password} onChange={handleChange} required />
         <input type="text" name="firstName" placeholder="Jméno" value={form.firstName} onChange={handleChange} required />
         <input type="text" name="lastName" placeholder="Příjmení" value={form.lastName} onChange={handleChange} required />

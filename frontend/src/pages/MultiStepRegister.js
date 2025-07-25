@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import './MultiStepRegister.css';
+import RegisterNavbar from './RegisterNavbar';
 
 const steps = [
   'Nová Registrace',
@@ -71,49 +72,57 @@ export default function MultiStepRegister() {
   };
 
   return (
-    <div className="multistep-bg">
-      <div className="register-container">
-        {step === 0 && (
-          <>
-            <h2>{steps[0]}</h2>
-            <form className="register-form" onSubmit={handleEmailPassword}>
-              <input type="email" name="email" placeholder="Email" value={form.email} onChange={handleChange} required />
-              <input type="password" name="password" placeholder="Heslo" value={form.password} onChange={handleChange} required />
-              <button type="submit">Pokračovat</button>
-            </form>
-          </>
-        )}
-        {step === 1 && (
-          <>
-            <h2>{steps[1]}</h2>
-            <div className="verify-email-step">
-              <p>{message || 'Zkontrolujte email a klikněte na ověřovací odkaz.'}</p>
-              <button onClick={handleVerifyEmail}>Pokračovat</button>
-            </div>
-          </>
-        )}
-        {step === 2 && (
-          <>
-            <h2>{steps[2]}</h2>
-            <form className="register-form" onSubmit={handlePersonalData}>
-              <input type="text" name="firstName" placeholder="Jméno" value={form.firstName} onChange={handleChange} required />
-              <input type="text" name="lastName" placeholder="Příjmení" value={form.lastName} onChange={handleChange} required />
-              <input type="date" name="birthDate" placeholder="Datum narození" value={form.birthDate} onChange={handleChange} required />
-              <select name="gender" value={form.gender} onChange={handleChange} required>
-                <option value="">Pohlaví</option>
-                <option value="male">Muž</option>
-                <option value="female">Žena</option>
-                <option value="other">Jiné</option>
-              </select>
-              <input type="text" name="address" placeholder="Adresa" value={form.address} onChange={handleChange} required />
-              <input type="text" name="city" placeholder="Město" value={form.city} onChange={handleChange} required />
-              <input type="text" name="zip" placeholder="PSČ" value={form.zip} onChange={handleChange} required />
-              <button type="submit">Dokončit registraci</button>
-            </form>
-          </>
-        )}
-        <div className="register-message">{message}</div>
+    <>
+      <RegisterNavbar />
+      <div className="register-layout">
+        <div className="register-image" />
+        <div className="register-right">
+          <div className="register-container">
+            {step === 0 && (
+              <>
+                <h2>{steps[0]}</h2>
+                <form className="register-form" onSubmit={handleEmailPassword}>
+                  <label htmlFor="email" className="register-label">E-mail</label>
+                  <input type="email" id="email" name="email" placeholder="priklad@mail.com" value={form.email} onChange={handleChange} required />
+                  <label htmlFor="password" className="register-label">Heslo</label>
+                  <input type="password" id="password" name="password" placeholder="Heslo" value={form.password} onChange={handleChange} required />
+                  <button type="submit">Pokračovat</button>
+                </form>
+              </>
+            )}
+            {step === 1 && (
+              <>
+                <h2>{steps[1]}</h2>
+                <div className="verify-email-step">
+                  <p>{message || 'Zkontrolujte email a klikněte na ověřovací odkaz.'}</p>
+                  <button onClick={handleVerifyEmail}>Pokračovat</button>
+                </div>
+              </>
+            )}
+            {step === 2 && (
+              <>
+                <h2>{steps[2]}</h2>
+                <form className="register-form" onSubmit={handlePersonalData}>
+                  <input type="text" name="firstName" placeholder="Jméno" value={form.firstName} onChange={handleChange} required />
+                  <input type="text" name="lastName" placeholder="Příjmení" value={form.lastName} onChange={handleChange} required />
+                  <input type="date" name="birthDate" placeholder="Datum narození" value={form.birthDate} onChange={handleChange} required />
+                  <select name="gender" value={form.gender} onChange={handleChange} required>
+                    <option value="">Pohlaví</option>
+                    <option value="male">Muž</option>
+                    <option value="female">Žena</option>
+                    <option value="other">Jiné</option>
+                  </select>
+                  <input type="text" name="address" placeholder="Adresa" value={form.address} onChange={handleChange} required />
+                  <input type="text" name="city" placeholder="Město" value={form.city} onChange={handleChange} required />
+                  <input type="text" name="zip" placeholder="PSČ" value={form.zip} onChange={handleChange} required />
+                  <button type="submit">Dokončit registraci</button>
+                </form>
+              </>
+            )}
+            <div className="register-message">{message}</div>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
