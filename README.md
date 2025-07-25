@@ -1,12 +1,3 @@
-# ServisKol
-
-![CI](https://github.com/<VASE-REPO-URL>/actions/workflows/ci.yml/badge.svg)
-![Backend Coverage](https://codecov.io/gh/<VASE-REPO-URL>/branch/main/graph/badge.svg?flag=backend)
-![Frontend Coverage](https://codecov.io/gh/<VASE-REPO-URL>/branch/main/graph/badge.svg?flag=frontend)
-![E2E Tests](https://github.com/<VASE-REPO-URL>/actions/workflows/ci.yml/badge.svg?branch=main&event=push)
-
----
-
 
 ## Monitoring, alerting a strategické checklisty
 
