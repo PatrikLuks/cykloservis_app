@@ -1,0 +1,33 @@
+Změna stavu v aplikaci – specifikace funkcí
+
+1. Výběr mechanika před vstupem
+Před vstupem do aplikace je nutné, aby si zákazník zvolil konkrétního mechanika.
+Mechanik bude přiřazen ke kolu a jeho servisním úkonům.
+2. Navedení kola
+Mechanik vyplní stav kola a použité součástky sám – nechat volný prostor k zadání.
+Priorita: jednoduchost – minimalizovat počet kroků a výběrů.
+3. Stav kola
+Stavové varianty:
+Je v pořádku → ANO
+Není v pořádku → NE
+4. Záznam kilometrů
+Zákazník může zadat, kolik kilometrů ujel (pomáhá sledovat opotřebení).
+Cílem je motivace k pravidelné údržbě → lze napojit na odměňovací systém.
+5. Typy servisu
+Definice typů servisu – sjednocená terminologie:
+Úvodní servis
+Komplexní servis
+6. Přidání kola
+Provádí mechanici – zadávají kolo do systému sami.
+7. Kalendář a časování
+Záznam data přidání kola do systému.
+Záznam času, kdy mechanik:
+Začal na kole pracovat
+Kolik času opravě věnoval
+Možnost přidat čas ručně i automaticky přes časovač.
+8. Možnost "Rychlo fix"
+(není dále specifikováno v dokumentu – pravděpodobně zjednodušený nebo expresní servis)
+9. Verze aplikace
+Lite verze:
+Základní funkce
+Součást sítě (např. partnerský provoz, omezené funkce)

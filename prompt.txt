@@ -1,0 +1,86 @@
+Podrobný prompt pro tvorbu aplikace pro servisáky kol
+Navrhni webovou nebo mobilní aplikaci pro servisní techniky kol a jejich klienty, která bude nejen profesionální a jednoduchá, ale nabídne i hravé prvky a maximální uživatelský komfort. Vzhled aplikace musí být v zelených odstínech a zaměřený na přehlednost. Přidej funkce, které klientům skutečně usnadní péči o jejich kolo a zvýší jejich loajalitu.
+
+Hlavní sekce a funkce aplikace:
+Příjmový dotazník
+
+Interaktivní formulář pro zadání typu kola, stáří, aktuálního stavu, popisu závady, možnost přiložit fotografie poškození nebo celého kola.
+
+Automatické navrhování možných příčin závady na základě popisu a fotek (AI asistence).
+
+Možnost předvyplnění údajů pro stálé klienty.
+
+Poradenství a návody
+
+Knihovna s detailními foto-návody na běžné opravy a údržbu kola, včetně videí a tipů na řešení častých problémů.
+
+Sekce s často kladenými dotazy (FAQ).
+
+Možnost položit dotaz přímo servisákovi nebo AI asistentovi.
+
+Doporučení vhodného vybavení a oblečení podle aktuálního počasí v místě klienta.
+
+Servisní kniha
+
+Digitální servisní kniha pro každé kolo, kde jsou přehledně zaznamenány všechny servisní úkony, včetně fotodokumentace před a po servisu.
+
+Možnost přidávat poznámky, nahrávat účtenky, sledovat náklady.
+
+Přehledná historie oprav a údržby.
+
+Připomenutí dalšího servisu
+
+Automatické notifikace podle času, počtu najetých kilometrů, počtu jízd nebo opotřebení komponent (řetěz, pláště, brzdové destičky apod.).
+
+Možnost propojení s aplikacemi typu Strava pro automatické načítání kilometráže.
+
+Obměnovací systém se slevami a věrnostní program
+
+Systém bodů za každý servis, nákup dílů nebo doporučení nového klienta.
+
+Body lze směnit za slevy na servis, náhradní díly, příslušenství nebo speciální akce.
+
+Úrovně věrnosti (např. Bronz, Stříbro, Zlato, Platina) s rostoucími benefity: přednostní termíny, bezplatné drobné opravy, pozvánky na workshopy nebo testování novinek.
+
+Měsíční výzvy a soutěže (např. ujetá vzdálenost, sdílení fotky kola po servisu).
+
+AI asistent
+
+Pomáhá s vyplněním dotazníku, doporučí servisní úkony, poskytne rady k údržbě, navrhne vhodné příslušenství.
+
+Odpovídá na dotazy ohledně servisu, údržby i výběru dílů.
+
+Personalizované tipy na základě historie kola a preferencí uživatele.
+
+Správa kol a dílů
+
+Možnost evidovat více kol, včetně detailního seznamu komponent a jejich stavu.
+
+Sklad náhradních dílů s možností nahrát fotky, poznámky a upozornění na nutnost doplnění zásob.
+
+Rychlé vyhledávání v historii oprav a dílů.
+
+Objednání servisu a komunikace
+
+Online rezervace termínu s přehledem volných slotů a možností výběru konkrétního servisáka nebo dílny.
+
+Transparentní ceník služeb, možnost získat předběžnou kalkulaci.
+
+Chat pro komunikaci s technikem, možnost sdílet fotky a domluvit detaily opravy.
+
+Další užitečné funkce pro klienty
+
+Počasí a doporučení vhodného oblečení na kolo.
+
+Rychlý přístup k často používaným návodům a tipům.
+
+Možnost zálohovat a synchronizovat data mezi zařízeními.
+
+Export servisní historie pro případ prodeje kola nebo pojištění.
+
+Designové požadavky:
+Hlavní barva: zelená (svěží, profesionální, důvěryhodná).
+
+Styl: jednoduchý, přehledný, s hravými prvky (ikonky, animace, gamifikace věrnostního programu).
+
+Uživatelské rozhraní: maximální jednoduchost, vše na pár kliknutí, přehledné menu, velká tlačítka, intuitivní navigace.

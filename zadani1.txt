@@ -1,0 +1,47 @@
+# Specifikace funkcionality aplikace pro servis kol
+
+## 1. Výběr mechanika před vstupem do aplikace
+- Před vstupem do hlavní části aplikace musí zákazník vybrat konkrétního mechanika.
+- Vybraný mechanik bude přiřazen ke konkrétnímu kolu a jeho servisním úkonům.
+
+## 2. Navedení kola
+- Mechanik zadá informace o stavu kola a použitých součástkách.
+- Pole pro zadání musí být volné/otevřené pro manuální zápis.
+- Důraz na jednoduchost a minimální počet kroků a výběrů.
+
+## 3. Stav kola
+- Stavové varianty:
+  - ✅ Je v pořádku
+  - ❌ Není v pořádku
+
+## 4. Záznam kilometrů
+- Zákazník zadává počet najetých kilometrů.
+- Účel: sledování opotřebení a motivace k pravidelné údržbě.
+- Možnost napojení na odměňovací systém.
+
+## 5. Typy servisu
+- Předdefinované typy servisů pro sjednocení terminologie:
+  - Úvodní servis
+  - Komplexní servis
+
+## 6. Přidání kola
+- Provádí výhradně mechanici.
+- Zadávají nové kolo do systému ručně.
+
+## 7. Kalendář a časování
+- Záznam data přidání kola do systému.
+- Evidence práce mechanika:
+  - Čas začátku práce na kole.
+  - Doba strávená opravou.
+- Možnost zaznamenat čas:
+  - Ručně.
+  - Automaticky pomocí časovače.
+
+## 8. Funkce „Rychlo fix“
+- Přidat možnost expresního nebo zjednodušeného servisu ("Quick Fix").
+
+## 9. Verze aplikace
+- **Lite verze:**
+  - Základní funkce.
+  - Provoz v rámci sítě (např. partnerské provozovny).
+  - Omezená funkcionalita oproti plné verzi.
