@@ -1,0 +1,5 @@
+aplikace bude rozdělena na dvě části.
+
+1. bude klientská část.
+
+2. bude část pro mechaniky z cykloservisu.
