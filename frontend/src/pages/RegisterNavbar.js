@@ -9,7 +9,7 @@ export default function RegisterNavbar() {
     <nav className="register-navbar">
       <button className="navbar-back" onClick={() => navigate(-1)}>&larr; Zpět</button>
       <div className="navbar-logo">
-        <img src={logo} alt="Logo" />
+        <img src="https://login.decathlon.net/assets/decathlon-logo-vp-DDH3S1xy.svg" alt="Logo" />
       </div>
       <div className="navbar-placeholder" />
     </nav>

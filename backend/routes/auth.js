@@ -20,14 +20,7 @@ const transporter = nodemailer.createTransport({
 router.post('/register', async (req, res) => {
   const {
     email,
-    password,
-    firstName,
-    lastName,
-    birthDate,
-    gender,
-    address,
-    city,
-    zip
+    password
   } = req.body;
   try {
     const existingUser = await User.findOne({ email });
@@ -39,27 +32,21 @@ router.post('/register', async (req, res) => {
     const user = new User({
       email,
       password: hashedPassword,
-      verificationToken,
-      firstName,
-      lastName,
-      birthDate,
-      gender,
-      address,
-      city,
-      zip
+      verificationToken
     });
     await user.save();
 
     // Send verification email
-    const url = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
-    await transporter.sendMail({
-      to: email,
-      subject: 'Verify your email',
-      html: `Click <a href="${url}">here</a> to verify your email.`
-    });
+    // const url = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+    // await transporter.sendMail({
+    //   to: email,
+    //   subject: 'Verify your email',
+    //   html: `Click <a href="${url}">here</a> to verify your email.`
+    // });
 
     res.status(201).json({ message: 'User registered. Please verify your email.' });
   } catch (err) {
+    console.error('REGISTER ERROR:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });

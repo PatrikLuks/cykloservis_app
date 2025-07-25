@@ -24,7 +24,7 @@
 
 .register-right {
   width: 50vw;
-  min-height: calc(100vh - 72px);
+  
   height: calc(100vh - 72px);
   display: flex;
   justify-content: center;

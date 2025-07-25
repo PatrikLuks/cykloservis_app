@@ -78,15 +78,29 @@ export default function MultiStepRegister() {
         <div className="register-image" />
         <div className="register-right">
           <div className="register-container">
+            <div className="register-progress-bar">
+              <div
+                className="register-progress-bar-fill"
+                style={{ width: `${((step + 1) / steps.length) * 100}%` }}
+              />
+            </div>
             {step === 0 && (
               <>
                 <h2>{steps[0]}</h2>
                 <form className="register-form" onSubmit={handleEmailPassword}>
-                  <label htmlFor="email" className="register-label">E-mail</label>
-                  <input type="email" id="email" name="email" placeholder="priklad@mail.com" value={form.email} onChange={handleChange} required />
-                  <label htmlFor="password" className="register-label">Heslo</label>
-                  <input type="password" id="password" name="password" placeholder="Heslo" value={form.password} onChange={handleChange} required />
+                  <div className="register-field">
+                    <label htmlFor="email" className="register-label">E-mail</label>
+                    <input type="email" id="email" name="email" placeholder="priklad@mail.com" value={form.email} onChange={handleChange} required />
+                  </div>
+                  <div className="register-field">
+                    <label htmlFor="password" className="register-label">Heslo</label>
+                    <input type="password" id="password" name="password" placeholder="Heslo" value={form.password} onChange={handleChange} required />
+                  </div>
                   <button type="submit">Pokračovat</button>
+                  <div className="register-or">
+                    <span>Nebo se zaregistrujte pomocí</span>
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/24px-Google_%22G%22_logo.svg.png?20230822192911" alt="Google" style={{height: '32px'}} />
+                  </div>
                 </form>
               </>
             )}
