@@ -1,0 +1,72 @@
+ServisKol – Detailní zpráva o stavu aplikace (21. 7. 2025)
+=========================================================
+
+1. Monitoring & Alerting
+------------------------
+- Pokrytí alertů: Alerty nastaveny pro backend, frontend, DB, externí služby (Prometheus, Sentry, Alertmanager, CI testy)
+- Alerty pokrývají výpadky, degradaci výkonu, chyby aplikace, nedostupnost závislostí
+- Alerty rozděleny podle závažnosti (critical, warning, info), testovány automatizovaně v CI
+- Monitoring klíčových metrik: latence, chybovost, vytížení, dostupnost, vizualizace v Grafana
+- Monitoring propojen s alertingem, alerty generují incidenty v ServiceNow
+- Incident management: Runbook popsán, incidenty logovány, post-mortem analýza probíhá
+- Dokumentace alertingu a monitoringu je aktuální, snadno dostupná, obsahuje příklady alertů, metrik a postupů
+- Audit alertingu probíhá minimálně 1x měsíčně (viz MONITORING_ALERTING_AUDIT_CHECKLIST.md)
+
+2. Výkonnostní testy & Asset audit
+----------------------------------
+- Load test backendu pomocí k6, pravidelné vyhodnocování metrik
+- Assety optimalizovány, servírovány přes CDN, lazy loading implementován
+- Měření LCP, FCP, TTI, pravidelná aktualizace závislostí a bezpečnostní audit
+- Výsledky testů a metrik vyhodnocovány, alerty na degradaci výkonu nastaveny
+- Onboarding dokumentace obsahuje postupy pro profilaci a optimalizaci
+
+3. Incident management & Bezpečnost
+-----------------------------------
+- Incidenty logovány, analyzovány, post-mortem analýza závažných incidentů
+- Pravidelný audit přístupových práv, ověřování 2FA u adminů
+- Testování obnovy záloh a disaster recovery scénářů
+- Omezení nadměrných exportů dat, sledování audit logů
+- Pravidelná aktualizace bezpečnostních checklistů
+- Pravidelné spouštění `npm audit`, aktualizace závislostí
+- JWT ukládány do HttpOnly cookie (doporučeno pro produkci)
+
+4. Reporting & AI analýza
+-------------------------
+- Týdenní reporty generovány skriptem `sendWeeklyReport.js`, odesílány adminům
+- Reporty obsahují souhrn akcí, alertů, trendů, AI predikci rizik, doporučení pro prevenci
+- AI sumarizace trendů, predikce budoucích rizik, doporučení pro prevenci, integrace s incident management systémem
+- Alerty při poklesu aktivity, nárůstu chyb, bezpečnostních incidentech (reportUtils.js)
+- Alerty odesílány e-mailem, push notifikací, zobrazovány v admin dashboardu
+- Automatické vytváření incidentů v ServiceNow při kritickém alertu
+- Governance report sumarizuje audit log, incidenty, změny práv, pokusy o neoprávněný přístup
+
+5. Onboarding & Dokumentace
+---------------------------
+- Aktuální onboarding pro vývojáře i testery (ONBOARDING_CHECKLIST.md, ONBOARDING_DEV.md, ONBOARDING_MOBILE.md)
+- Přehled architektury, datových modelů, workflow, CI/CD, testování, deploymentu
+- Seznam klíčových kontaktů a komunikačních kanálů
+- Checklist pro první spuštění projektu, troubleshooting sekce
+- Dokumentace pro uživatele: onboarding, dashboard, žebříček, odměny, 2FA, notifikace
+
+6. Servisní workflow & Věrnostní program
+----------------------------------------
+- Vytvoření servisní žádosti, upload fotky, změna stavu, historie změn, audit log, notifikace
+- Věrnostní program: body, úrovně, odznaky, widget na dashboardu
+- Chat a AI asistence: odeslání/příjem zprávy, odpověď AI asistenta
+- Analytika a exporty: export dashboard dat do CSV, PDF, XLSX, vizualizace trendů, heatmapa segmentů
+
+7. Slabiny & Roadmapa
+---------------------
+- Pravidelně auditovat přístupová práva, testovat obnovu záloh, sledovat audit logy
+- Provádět pravidelné load testy, optimalizovat endpointy, kontrolovat assety
+- Automatizovat testování alertů v CI, vyhodnocovat metriky v Prometheus/Grafana
+- Sledovat uživatelskou zpětnou vazbu, analyzovat logy kritických úkolů, generovat reporty pro retrospektivy
+
+8. Stav aplikace (21. 7. 2025)
+------------------------------
+- Monitoring, alerting, reporting, incident management, bezpečnost, onboarding, workflow, AI analýza, governance, exporty, asset audit, dokumentace – vše pokryto a automatizováno
+- Systém je robustní, škálovatelný, připravený na další strategické iterace
+- Doporučení: pokračovat v pravidelném auditu, rozšiřovat AI analýzu, automatizovat reakce na incidenty, aktualizovat dokumentaci
+
+---
+Tato zpráva byla vygenerována na základě aktuálního stavu kódu, reportů, auditů a dokumentace projektu ServisKol.

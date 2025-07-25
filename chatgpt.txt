@@ -1,0 +1,175 @@
+### 1. Funkcionalita pro klienta i servisního technika
+
+#### 👤 Klient:
+
+* Registrace / přihlášení (OAuth2: Google, Apple)
+* Domovská obrazovka s přehledem kol, stavem a doporučenými akcemi
+* Přidání kola s popisem, fotkami, komponenty
+* Příjmový dotazník (typ kola, stáří, stav, popis závady, upload fotek)
+* AI asistence (návrh příčiny problému + doporučený typ servisu)
+* Rezervace servisu (výběr technika, dílny, času, kalkulace ceny)
+* Servisní kniha (historie oprav, fotky, účtenky, poznámky)
+* Věrnostní program (body, úrovně, výzvy, výměna za slevy)
+* Poradenství (foto/video návody, AI chat, FAQ)
+* Komunikace s technikem (chat, zasílání fotek)
+* Správa více kol, export historie, propojení se Strava API
+* Doporučení oblečení dle počasí (OpenWeatherMap API)
+
+#### 🔧 Servisní technik:
+
+* Přihlášení a správa profilu
+* Výběr přidělených kol / zakázek
+* Zadání stavu kola, komponent, fotky
+* Záznam času opravy (manuálně nebo časovačem)
+* Možnost "Rychlo fix" záznamu
+* Přidání nového kola do systému
+* Správa klientů a servisní historie
+* Komunikace s klientem přes chat
+* Statistiky (čas práce, počet zakázek, hodnocení klienty)
+
+---
+
+### 2. UI/UX návrh a tok obrazovek
+
+#### 📱 Klientský tok (mobil/web):
+
+1. Přihlášení / registrace
+2. Domů: přehled kol, poslední servis, notifikace
+3. Detail kola → servisní historie, údržba, doporučení
+4. Příjmový dotazník → AI návrh → rezervace termínu
+5. Věrnostní program → výzvy, odměny
+6. Poradna / návody
+7. Chat s technikem
+8. Nastavení: propojení Strava, export, synchronizace
+
+#### 🛠 Technik:
+
+1. Přihlášení
+2. Přehled servisních zakázek
+3. Detail zakázky → stav kola, fotky, poznámky, čas opravy
+4. Správa kol / klientů
+5. Statistiky + kalendář
+6. Chat s klientem
+
+---
+
+### 3. Databázový model v MongoDB (zjednodušeně)
+
+**Users**
+
+```json
+{
+  _id, name, email, passwordHash, role: ['client', 'mechanic'], loyaltyLevel, bikes: [bikeId], createdAt
+}
+```
+
+**Bikes**
+
+```json
+{
+  _id, ownerId, brand, model, type, age, components: [component], photoUrls: [], status: 'OK' | 'NOT_OK', mileage, serviceHistory: [serviceId], createdAt
+}
+```
+
+**Components**
+
+```json
+{
+  name, type, condition, installedAt, expectedLifetimeKm
+}
+```
+
+**ServiceRequests**
+
+```json
+{
+  _id, bikeId, userId, mechanicId, type: 'Initial' | 'Complex' | 'QuickFix', description, photoUrls, aiDiagnosis, status: 'Open' | 'InProgress' | 'Done', createdAt, startTime, endTime, priceEstimate
+}
+```
+
+**LoyaltyPoints**
+
+```json
+{
+  userId, points, history: [{ date, points, reason }], tier: 'Bronze' | 'Silver' | 'Gold' | 'Platinum'
+}
+```
+
+**Messages**
+
+```json
+{
+  fromUserId, toUserId, content, timestamp, attachments: []
+}
+```
+
+---
+
+### 4. Architektura frontend + backend
+
+#### Frontend:
+
+* **React** (web)
+* **React Native** (mobil)
+* **TailwindCSS** pro rychlý styl
+* **MUI** pro komponenty
+* **Lottie** pro animace (věrnostní úrovně, loading)
+
+#### Backend:
+
+* **Node.js** + **Express** nebo **NestJS** (doporučeno pro větší škálovatelnost)
+* **REST API** nebo **GraphQL** (GraphQL pro flexibilní frontend dotazy)
+* **MongoDB** (NoSQL, ideální pro dynamická pole – komponenty, historie apod.)
+* **Cloudinary / AWS S3** na fotky a videa
+* **Firebase / OneSignal** pro push notifikace
+* **OAuth2** autentizace (Google, Apple)
+* **OpenAI API** – NLP asistence, návrhy příčin
+* **OpenWeatherMap API** – počasí
+* **Strava API** – import kilometráže
+
+---
+
+### 5. AI funkcionalita
+
+* NLP zpracování popisu závady a fotek → návrh příčiny
+* Personalizované rady na základě historie kola a jízd
+* Asistent pro vyplnění příjmového formuláře
+* AI chat (FAQ + prediktivní odpovědi)
+* Doporučení náhradních dílů / vybavení podle stylu jízdy
+
+---
+
+### 6. MVP a roadmapa verzí
+
+#### MVP (fáze 1):
+
+* Webová aplikace (React)
+* Registrace, přihlášení, přidání kola, dotazník, historie servisu
+* Základní rezervace termínu
+* Chat a upozornění
+
+#### Verze 2:
+
+* AI asistence a návrh závady
+* Věrnostní program a gamifikace
+* Mobilní appka (React Native)
+
+#### Verze 3:
+
+* Strava a počasí integrace
+* Statistiky, export, synchronizace
+* Pokročilé AI návrhy a personalizace
+
+---
+
+### 7. Monetizace a škálování
+
+* **SaaS licencování**: měsíční poplatek za používání systému servisními dílnami
+* **Freemium model**: Lite verze zdarma pro malé servisy
+* **Premium funkce**: AI asistence, statistiky, věrnostní systém, Strava integrace
+* **Marketplace**: prodej náhradních dílů a doplňků
+* **Affiliate program**: napojení na obchody a e-shopy (zisk z prokliků)
+
+---
+
+Takto navržený systém je škálovatelný, připravený pro rychlé MVP i budoucí růst s přesahem do komunitního a AI-driven produktu.

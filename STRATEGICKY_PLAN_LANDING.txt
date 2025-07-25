@@ -1,0 +1,63 @@
+# Strategický plán pro modernizaci hlavní stránky Serviskol
+
+## 1. Vize a cíle
+- Vytvořit moderní, přehlednou a důvěryhodnou hlavní stránku, která jasně komunikuje hodnotu Serviskol.
+- Zaujmout nové uživatele, motivovat k registraci a zvýšit důvěru stávajících klientů.
+- Zajistit špičkovou použitelnost na všech zařízeních (mobil, tablet, desktop).
+
+## 2. Klíčové principy návrhu
+- **Jasné sdělení:** Hned v úvodu musí být zřejmé, co Serviskol nabízí a proč je unikátní.
+- **Akční výzva:** Výrazné CTA tlačítko (registrace, demo, kontakt).
+- **Přehlednost:** Struktura stránky musí být logická, sekce jasně oddělené, texty stručné a výstižné.
+- **Důvěryhodnost:** Reference, bezpečnost, GDPR, podpora.
+- **Moderní vizuál:** Použití Tailwind/MUI, kvalitní ikony, ilustrace, případně screenshoty.
+- **Responzivita:** Perfektní zobrazení na všech zařízeních.
+
+## 3. Struktura nové hlavní stránky
+1. **Hero sekce**
+   - Logo, slogan, hlavní sdělení
+   - CTA tlačítko (Začít / Registrace)
+2. **Jak Serviskol pomáhá**
+   - 3–4 boxy s ikonami a krátkým popisem (Gamifikace, AI reporty, Správa zakázek, Zpětná vazba)
+3. **Ukázka dashboardu**
+   - Screenshot nebo interaktivní mockup
+4. **Reference/recenze**
+   - Citace uživatelů, loga firem
+5. **Bezpečnost a důvěra**
+   - GDPR, bezpečnost dat, podpora
+6. **Footer**
+   - Kontakty, odkazy, copyright
+
+## 4. Technologický stack
+- React + Vite
+- Tailwind CSS (rychlý a moderní design)
+- MUI (volitelné pro komponenty)
+- Heroicons/Material Icons
+- Ilustrace, screenshoty
+
+## 5. Postup realizace
+1. **Vytvoření nové komponenty** (Landing.jsx)
+2. **Nastavení nové route** ("/" nebo "/landing")
+3. **Implementace struktury a stylů**
+4. **Testování responzivity a UX**
+5. **Propojení CTA s registrací/přihlášením**
+6. **Iterace na základě zpětné vazby**
+
+## 6. Kontrola kvality
+- Pravidelně testovat na různých zařízeních a prohlížečích.
+- Získávat zpětnou vazbu od reálných uživatelů.
+- Průběžně vylepšovat texty, vizuály i funkčnost.
+
+## 7. Další doporučení
+- Udržovat kód čistý, přehledný a dobře komentovaný.
+- Využívat komponentový přístup a opakovatelné UI prvky.
+- Pracovat iterativně – nejprve MVP, poté rozšiřovat a ladit.
+
+---
+
+Tento plán slouží jako vodítko pro všechny další kroky. Každou větší změnu nebo nápad nejprve zapiš sem, ať máme jasnou historii rozhodnutí a můžeme se kdykoliv vrátit k původnímu záměru.
+
+---
+
+Datum poslední revize: 22. 7. 2025
+Autor: GitHub Copilot (AI asistent)
