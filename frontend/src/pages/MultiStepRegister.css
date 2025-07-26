@@ -1,3 +1,265 @@
+/* Stylovaný wrapper pro input typu date */
+.date-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.styled-date-input {
+  width: 100%;
+  padding: 14px 40px 14px 12px;
+  border: 1.5px solid #000;
+  border-radius: 4px;
+  font-size: 16px;
+  background: #fff;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.styled-date-input:focus {
+  border-color: #1976d2;
+}
+.calendar-icon {
+  position: absolute;
+  right: 14px;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  top: 50%;
+  transform: translateY(-50%);
+}
+/* Spinner uvnitř tlačítka */
+.spinner-in-btn {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border: 3px solid #fff;
+  border-top: 3px solid #1976d2;
+  border-radius: 50%;
+  animation: spin-btn 0.8s linear infinite;
+  vertical-align: middle;
+  margin: 0 auto;
+}
+
+@keyframes spin-btn {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+/* odkaz pro zaslání kódu znovu */
+.resend-code-link {
+  display: inline-block;
+  margin-top: 10px;
+  color: #000000;
+  background: none;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+  font-size: 1rem;
+  padding: 0;
+  width: auto;
+  transition: color 0.2s;
+}
+.resend-code-link:hover:not(.disabled) {
+  color: #1251a3;
+  text-decoration: none;
+}
+.resend-code-link.disabled {
+  color: #aaa;
+  cursor: not-allowed;
+  text-decoration: none;
+  pointer-events: none;
+}
+.criteria-circle {
+  display: inline-block;
+      width: 0.5rem;
+    height: 0.5rem;
+  border-radius: 50%;
+  background: #949494;
+  margin-right: 8px;
+ 
+  vertical-align: middle;
+  transition: background 0.2s, border 0.2s;
+}
+.criteria-circle-valid {
+  background: #1976d2;
+  
+}
+/* Styl pro Google logo v rámečku */
+.register-social-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+.register-social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  box-shadow: 0 1px 2px rgba(60,60,60,0.04);
+}
+.register-social-btn:hover {
+  background: #d1d5db;
+}
+.register-social-btn img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+  padding: 2px;
+}
+/* Zarovnání a styl pro sekci dole pod formulářem */
+
+.register-login-link {
+  color: #000000;
+text-decoration: none;
+  cursor: pointer;
+  font-weight: 500;
+  border-bottom: 1px solid #949494;
+      width: fit-content;
+          height: 20px;
+          transition: color 0.2s ease;
+}
+
+ .register-login-link:hover {
+  color: #5e5e5e;
+}
+
+.register-terms {
+  margin-top: 1.1rem;
+  font-size: 14px;
+  color: #555;
+  text-align: left;
+  line-height: 20px;
+}
+
+ .register-terms a {
+  color: #000000;
+  text-decoration: none;
+   border-bottom: 1px solid #949494;
+   transition: color 0.2s ease;
+}
+
+/* Hover */
+
+.register-terms a:hover {
+  color: #5e5e5e;
+  text-decoration: none;
+   border-bottom: 1px solid #949494;
+}
+
+/* Styl pro krok s heslem */
+.register-password-step {
+ 
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+}
+.register-password-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+}
+.register-edit-email {
+  background: none;
+  border: none;
+  color: #222;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0;
+}
+.register-password-input-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  position: relative;
+  margin-bottom: 8px;
+  background: none;
+  padding: 0;
+  height: auto;
+}
+.register-password-eye {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  height: 24px;
+  color: #222;
+  z-index: 2;
+  background: none;
+  border: none;
+  padding: 0;
+}
+.register-password-eye svg {
+  display: block;
+}
+.register-password-input-wrapper input {
+  flex: 1;
+  padding: 16px 44px 16px 12px;
+  border: none;
+  background: transparent;
+  font-size: 1.1rem;
+  outline: none;
+  box-shadow: none;
+}
+.register-password-input-wrapper input:focus {
+  outline: none;
+}
+.register-password-toggle {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: #222;
+  padding: 4px 8px;
+  z-index: 2;
+}
+.register-password-toggle.left {
+  left: 8px;
+  right: auto;
+}
+.register-password-input-wrapper input {
+  /* zruš padding pro oko, když tam není */
+  padding-left: 16px !important;
+}
+.register-password-criteria {
+  list-style: none;
+  padding: 0 0 0 4px;
+  margin: 18px 0 18px 0;
+  font-size: 1rem;
+  color: #888;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 24px;
+}
+.register-password-criteria li {
+  margin-bottom: 2px;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  color:
+}
 body {
  
   background: #ffffff;
@@ -33,7 +295,7 @@ body {
   min-width: 0;
   max-width: 50vw;
   height: calc(100vh - 72px);
-  background: url('../../../img/Register-hero.png') no-repeat center center;
+  background: url('../img/Register-hero.png') no-repeat center center;
   background-size: cover;
 }
 
@@ -52,17 +314,21 @@ body {
  
 }
 
+.register-title {
+ margin-bottom: 0px !important
+}
  .register-container {
   width: 100%;
   max-width: 420px;
   min-height: 600px;
-  border-radius: 16px;
+
   box-shadow: none;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  align-items: stretch;
+  align-items: start;
   position: relative;
+      gap: 32px;
 }
 
 .register-progress-bar {
@@ -84,6 +350,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  width: 100%;
 }
 
 .register-field {
@@ -99,7 +366,7 @@ body {
   width: 100%;
   min-width: 0;
   padding: 14px 14px;
-  border-radius: 8px;
+  border-radius: 4px;
   font-size: 16px;
 }
 
@@ -109,6 +376,7 @@ body {
   background: transparent;
   margin-bottom: 4px;
   transition: border-color 0.2s;
+
 }
 
 .register-form input:focus,
@@ -124,12 +392,18 @@ body {
   font-weight: 500;
   cursor: pointer;
   margin-top: 4px;
-  
   box-shadow: none;
   transition: background 0.2s;
   align-self: stretch;
-  display: block;
-
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  height: 48px;
+  line-height: 1.2;
+  font-size: 1rem;
+  position: relative;
+  padding: 0 16px;
 }
 
 .register-form button:hover {
@@ -140,15 +414,17 @@ body {
   font-size: 1rem;
   font-weight: 500;
   margin-bottom: 12px;
-  margin-top: 24px;
+ 
   color: #000000;
 }
 
 .register-message {
-  margin-top: 18px;
-  color: #1976d2;
+
+  color: #000000;
   font-weight: 500;
   text-align: center;
+  width: 100%;
+ 
 }
 
 h2 {
@@ -198,11 +474,8 @@ h2 {
   margin: 32px 0;
 }
 .register-or {
-  display: flex;
-  flex-direction: column;
-  align-items: start;
   margin-top: 18px;
-  gap: 10px;
+ 
 }
 
 .google-login-btn {
@@ -226,4 +499,22 @@ h2 {
 .register-or img {
   height: 32px;
   margin-top: 2px;
+}
+
+.already-registered-button{
+display: flex;
+    gap: 10px;
+    flex-direction: column;
+   
+}
+
+
+.have-an-account{
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.password-field {
+  display: flex;
+  flex-direction: column;
 }

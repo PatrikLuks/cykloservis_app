@@ -1,33 +1,119 @@
+import { Link } from 'react-router-dom';
 
 import React, { useState } from 'react';
 import axios from 'axios';
-import './Login.css';
+import './MultiStepRegister.css';
+import RegisterNavbar from './RegisterNavbar';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = e => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setMessage('');
     try {
-      const res = await axios.post('http://localhost:5000/auth/login', { email, password });
+      await axios.post('http://localhost:5000/auth/login', { email: form.email, password: form.password });
       setMessage('Přihlášení úspěšné!');
       // Uložit token, redirect atd.
     } catch (err) {
       setMessage(err.response?.data?.message || 'Chyba při přihlášení');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="login-container">
-      <h2>Přihlášení</h2>
-      <form className="login-form" onSubmit={handleSubmit}>
-        <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
-        <input type="password" placeholder="Heslo" value={password} onChange={e => setPassword(e.target.value)} required />
-        <button type="submit">Přihlásit se</button>
-      </form>
-      <div className="login-message">{message}</div>
-    </div>
+    <>
+      <RegisterNavbar />
+      <div className="register-layout">
+        <div className="register-image" />
+        <div className="register-right">
+          <div className="register-container" style={{ marginTop: 40 }}>
+            <h2 className="register-title">Přihlášení</h2>
+            <form className="register-form" onSubmit={handleSubmit}>
+              <div className="register-field">
+                <label htmlFor="email" className="register-label">E-mail</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  placeholder="priklad@mail.com"
+                  value={form.email}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="register-field">
+                <label htmlFor="password" className="register-label">Heslo</label>
+                <div className="register-password-input-wrapper">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    id="password"
+                    name="password"
+                    placeholder="Heslo"
+                    value={form.password}
+                    onChange={handleChange}
+                    required
+                  />
+                  <span
+                    className="register-password-eye"
+                    tabIndex={0}
+                    role="button"
+                    aria-label={showPassword ? 'Skrýt heslo' : 'Zobrazit heslo'}
+                    onClick={() => setShowPassword(v => !v)}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setShowPassword(v => !v); }}
+                  >
+                    {showPassword ? (
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="3.5" stroke="#222" strokeWidth="1.5"/>
+                        <path d="M2 12C3.73 7.61 7.86 4.5 12 4.5C16.14 4.5 20.27 7.61 22 12C20.27 16.39 16.14 19.5 12 19.5C7.86 19.5 3.73 16.39 2 12Z" stroke="#222" strokeWidth="1.5"/>
+                        <line x1="6" y1="6" x2="18" y2="18" stroke="#222" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                    ) : (
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="3.5" stroke="#222" strokeWidth="1.5"/>
+                        <path d="M2 12C3.73 7.61 7.86 4.5 12 4.5C16.14 4.5 20.27 7.61 22 12C20.27 16.39 16.14 19.5 12 19.5C7.86 19.5 3.73 16.39 2 12Z" stroke="#222" strokeWidth="1.5"/>
+                      </svg>
+                    )}
+                  </span>
+                </div>
+              </div>
+              <Link to="/forgot-password" className="register-login-link" style={{ alignSelf: 'start', marginBottom: 8 }}>
+                Zapomněli jste heslo?
+              </Link>
+              <button type="submit" disabled={loading} style={{ minHeight: 48, height: 48, fontWeight: 500 }}>
+                {loading ? (
+                  <span className="spinner-in-btn" aria-label="Načítání"></span>
+                ) : (
+                  'Přihlásit se'
+                )}
+              </button>
+              <div className="register-or">
+                <span>Nebo se přihlaste pomocí</span>
+                <div className="register-social-row">
+                  <div className="register-social-btn">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/24px-Google_%22G%22_logo.svg.png?20230822192911" alt="Google-logo" />
+                  </div>
+                </div>
+              </div>
+            </form>
+         
+            <div className="already-registered-button" >
+              <span className="have-an-account">Jste nový?</span>
+              <Link to="/register" className="register-login-link">Založte si účet</Link>
+            </div>
+               <div className="register-message">{message}</div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
