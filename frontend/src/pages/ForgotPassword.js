@@ -8,7 +8,10 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [confirmTouched, setConfirmTouched] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const codeInputs = [React.useRef(), React.useRef(), React.useRef(), React.useRef(), React.useRef(), React.useRef()];
@@ -39,15 +42,35 @@ export default function ForgotPassword() {
       setStep(2);
       setMessage('Kód ověřen, nastavte nové heslo.');
     } catch (err) {
-      setMessage(err.response?.data?.message || 'Chybný kód');
+      setMessage('Nesprávný kód');
     } finally {
       setLoading(false);
     }
   };
 
+  // Validace hesla (stejné jako v registraci)
+  const passwordValidations = [
+    { label: '1 velké písmeno', valid: /[A-Z]/.test(newPassword) },
+    { label: '1 malé písmeno', valid: /[a-z]/.test(newPassword) },
+    { label: '1 číslice', valid: /[0-9]/.test(newPassword) },
+    { label: '1 speciální znak', valid: /[^A-Za-z0-9]/.test(newPassword) },
+    { label: '8 znaků', valid: newPassword.length >= 8 },
+    { label: 'Bez mezer', valid: !/\s/.test(newPassword) }
+  ];
+
   // 3. krok: nové heslo
   const handleSetPassword = async (e) => {
     e.preventDefault();
+    setPasswordTouched(true);
+    setConfirmTouched(true);
+    if (!passwordValidations.every(v => v.valid)) {
+      setMessage('Heslo nesplňuje všechna kritéria.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setMessage('Hesla se neshodují.');
+      return;
+    }
     setLoading(true);
     setMessage('');
     try {
@@ -68,7 +91,15 @@ export default function ForgotPassword() {
         <div className="register-image" />
         <div className="register-right">
           <div className="register-container" style={{ marginTop: 40 }}>
-            <h2 className="register-title">Obnova hesla</h2>
+            <h2 className="register-title">{step === 2 ? 'Nastavit nové heslo' : 'Obnova hesla'}</h2>
+            {step === 0 && (
+              <div className="form-desc">
+                Pro obnovu hesla zadejte e-mailovou adresu, kterou jste použili při registraci svého účtu.
+              </div>
+            )}
+            {step === 2 && (
+              <div className="register-message" style={{ marginBottom: 16, textAlign: 'left' }}>Kód ověřen, nastavte nové heslo.</div>
+            )}
             {step === 0 && (
               <form className="register-form" onSubmit={handleSendEmail}>
                 <div className="register-field">
@@ -90,7 +121,20 @@ export default function ForgotPassword() {
             )}
             {step === 1 && (
               <form className="register-form" onSubmit={handleVerifyCode}>
-                <label className="register-label">Zadejte 6-místný kód z emailu</label>
+                <label className="register-label">Pro obnovu hesla zadejte ověřovací kód, který jsme vám zaslali e-mailem. Tento jednorázový kód je odeslán na adresu:</label>
+                <div className="register-password-header">
+                  <span style={{ fontWeight: 'bold' }}>{email}</span>
+
+                  <button
+                    type="button"
+                    className="register-edit-email"
+                    onClick={() => {
+                      setStep(0);
+                      setMessage('');
+                    }}
+                  >Upravit</button>
+
+                </div>
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', margin: '24px 0' }}>
                   {code.map((digit, idx) => (
                     <input
@@ -135,8 +179,11 @@ export default function ForgotPassword() {
                   ))}
                 </div>
                 <button type="submit" disabled={code.some(d => !d) || loading} style={{ minHeight: 48, height: 48, fontWeight: 500 }}>
-                  {loading ? <span className="spinner-in-btn" aria-label="Načítání"></span> : 'Ověřit kód'}
+                  {loading ? <span className="spinner-in-btn" aria-label="Načítání"></span> : 'Ověřit'}
                 </button>
+                {message && (
+                  <div className="register-message" style={{ marginTop: 12 }}>{message}</div>
+                )}
               </form>
             )}
             {step === 2 && (
@@ -150,8 +197,9 @@ export default function ForgotPassword() {
                       name="newPassword"
                       placeholder="Nové heslo"
                       value={newPassword}
-                      onChange={e => setNewPassword(e.target.value)}
+                      onChange={e => { setNewPassword(e.target.value); setPasswordTouched(true); }}
                       required
+                      autoComplete="new-password"
                     />
                     <span
                       className="register-password-eye"
@@ -176,7 +224,34 @@ export default function ForgotPassword() {
                     </span>
                   </div>
                 </div>
-                <button type="submit" disabled={loading} style={{ minHeight: 48, height: 48, fontWeight: 500 }}>
+                <ul className="register-password-criteria">
+                  {passwordValidations.map((v, i) => (
+                    <li key={i}>
+                      <span className={v.valid ? 'criteria-circle criteria-circle-valid' : 'criteria-circle'}></span> {v.label}
+                    </li>
+                  ))}
+                </ul>
+                <div className="register-field">
+                  <label htmlFor="confirmPassword" className="register-label">Potvrdit heslo</label>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    placeholder="Potvrdit heslo"
+                    value={confirmPassword}
+                    onChange={e => { setConfirmPassword(e.target.value); setConfirmTouched(true); }}
+                    required
+                    autoComplete="new-password"
+                  />
+                  {confirmTouched && confirmPassword && newPassword !== confirmPassword && (
+                    <div className="register-error" style={{ color: 'red', fontSize: 13, marginTop: 4 }}>Hesla se neshodují.</div>
+                  )}
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading || !passwordValidations.every(v => v.valid) || !newPassword || !confirmPassword || newPassword !== confirmPassword}
+                  style={{ minHeight: 48, height: 48, fontWeight: 500 }}
+                >
                   {loading ? <span className="spinner-in-btn" aria-label="Načítání"></span> : 'Nastavit nové heslo'}
                 </button>
               </form>
@@ -184,7 +259,7 @@ export default function ForgotPassword() {
             {step === 3 && (
               <div className="register-message">Heslo bylo úspěšně změněno. Nyní se můžete <a href="/login">přihlásit</a>.</div>
             )}
-            <div className="register-message">{message}</div>
+            
           </div>
         </div>
       </div>

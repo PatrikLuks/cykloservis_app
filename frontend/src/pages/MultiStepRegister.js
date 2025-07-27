@@ -269,7 +269,7 @@ export default function MultiStepRegister() {
                   const codeStr = code.join('');
                   handleVerifyCode({ preventDefault: () => {}, target: { value: codeStr } });
                 }}>
-                  <label className="register-label">Při registraci je vyžadován kód pro ověření. Tento jednorázový kód je odeslán na adresu:</label>
+                  <label className="form-desc">Při registraci je vyžadován kód pro ověření. Tento jednorázový kód je odeslán na adresu:</label>
                   <div className="register-password-header">
                     <span style={{ fontWeight: 'bold' }}>{form.email}</span>
                   </div>

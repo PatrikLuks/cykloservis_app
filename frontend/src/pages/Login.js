@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import React, { useState } from 'react';
 import axios from 'axios';
@@ -10,6 +10,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -21,8 +22,7 @@ export default function Login() {
     setMessage('');
     try {
       await axios.post('http://localhost:5000/auth/login', { email: form.email, password: form.password });
-      setMessage('Přihlášení úspěšné!');
-      // Uložit token, redirect atd.
+      navigate('/onboarding');
     } catch (err) {
       setMessage(err.response?.data?.message || 'Chyba při přihlášení');
     } finally {

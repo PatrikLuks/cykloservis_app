@@ -80,7 +80,7 @@ router.post('/register', async (req, res) => {
   const { email } = req.body;
   try {
     let user = await User.findOne({ email });
-    if (user && user.isVerified) return res.status(400).json({ message: 'Email already exists' });
+    if (user && user.isVerified) return res.status(400).json({ message: 'Účet s tímto emailem již existuje' });
 
     // Vygeneruj 6-místný kód
     const code = Math.floor(100000 + Math.random() * 900000).toString();
@@ -155,10 +155,10 @@ router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'Invalid credentials' });
-    if (!user.isVerified) return res.status(400).json({ message: 'Email not verified' });
+    if (!user) return res.status(400).json({ message: 'Uživatel s tímto emailem neexistuje.' });
+    if (!user.isVerified) return res.status(400).json({ message: 'Email není ověřen' });
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
+    if (!isMatch) return res.status(400).json({ message: 'Nesprávné heslo' });
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.json({ token });
   } catch (err) {
