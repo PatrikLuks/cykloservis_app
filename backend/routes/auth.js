@@ -2,9 +2,27 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const nodemailer = require('nodemailer');
 
 const router = express.Router();
+
+// Uloží nebo aktualizuje heslo uživatele podle emailu
+router.post('/save-password', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ message: 'Email a heslo jsou povinné.' });
+  try {
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = new User({ email });
+    }
+    user.password = await bcrypt.hash(password, 10);
+    await user.save();
+    res.json({ message: 'Heslo bylo uloženo.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Chyba serveru při ukládání hesla.' });
+  }
+});
+
+const nodemailer = require('nodemailer');
 
 // Nodemailer transporter
 const transporter = nodemailer.createTransport({
@@ -86,10 +104,11 @@ router.post('/register', async (req, res) => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
 
     if (!user) {
-      user = new User({ email, verificationCode: code, isVerified: false });
+      user = new User({ email, verificationCode: code, isVerified: false, finallyRegistered: false });
     } else {
       user.verificationCode = code;
       user.isVerified = false;
+      if (typeof user.finallyRegistered === 'undefined') user.finallyRegistered = false;
     }
     await user.save();
 
@@ -108,20 +127,30 @@ router.post('/register', async (req, res) => {
 
 // Complete profile endpoint
 router.post('/complete-profile', async (req, res) => {
-  const { email, password, firstName, lastName, birthDate, gender, location } = req.body;
+  console.log('COMPLETE PROFILE REQ:', req.body);
+  const { email, firstName, lastName, birthDate, gender, location } = req.body;
   try {
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: 'Uživatel neexistuje.' });
     if (!user.isVerified) return res.status(400).json({ message: 'Nejprve ověřte svůj email.' });
-    if (!password) return res.status(400).json({ message: 'Heslo je povinné.' });
-
-    user.password = await bcrypt.hash(password, 10);
     user.firstName = firstName;
     user.lastName = lastName;
     user.birthDate = birthDate;
     user.gender = gender;
     user.location = location;
+    user.finallyRegistered = true;
     await user.save();
+    // Odeslat uvítací e-mail
+    try {
+      await transporter.sendMail({
+        to: email,
+        subject: 'Vítejte v Cykloservisu!',
+        html: `<h2>Vítejte, ${firstName || ''}!</h2><p>Váš účet byl úspěšně vytvořen. Jsme rádi, že jste s námi 🚲<br>Pokud budete mít jakýkoliv dotaz, neváhejte nás kontaktovat.</p>`
+      });
+    } catch (mailErr) {
+      console.error('WELCOME EMAIL ERROR:', mailErr);
+      // Nepřerušuj registraci kvůli chybě e-mailu
+    }
     res.json({ message: 'Profil byl úspěšně uložen.' });
   } catch (err) {
     console.error('COMPLETE PROFILE ERROR:', err);
@@ -160,7 +189,7 @@ router.post('/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Nesprávné heslo' });
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token });
+    res.json({ token, finallyRegistered: !!user.finallyRegistered });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }

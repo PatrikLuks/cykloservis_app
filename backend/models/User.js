@@ -10,7 +10,8 @@ const UserSchema = new mongoose.Schema({
   birthDate: { type: Date },
   gender: { type: String },
   location: { type: String },
-  resetPasswordCode: { type: String }
+  resetPasswordCode: { type: String },
+  finallyRegistered: { type: Boolean, default: false }
 });
 
 module.exports = mongoose.model('User', UserSchema);
