@@ -12,12 +12,31 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Helper functions for robust error matching
+  const isEmailError = msg => msg && (msg.toLowerCase().includes('neexistuje') || msg === 'Zadejte platnou e-mailovou adresu');
+  const isPasswordError = msg => msg && msg.toLowerCase().includes('heslo');
+
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    if (
+      (e.target.name === 'password' && isPasswordError(message)) ||
+      (e.target.name === 'email' && isEmailError(message))
+    ) {
+      setMessage('');
+    }
+  };
+
+  // Simple email validation
+  const isValidEmail = email => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.email || !isValidEmail(form.email)) {
+      setMessage('Zadejte platnou e-mailovou adresu');
+      return;
+    }
     setLoading(true);
     setMessage('');
     try {
@@ -42,14 +61,20 @@ export default function Login() {
               <div className="register-field">
                 <label htmlFor="email" className="register-label">E-mail</label>
                 <input
-                  type="email"
+                  type="text"
                   id="email"
                   name="email"
                   placeholder="priklad@mail.com"
                   value={form.email}
                   onChange={handleChange}
-                  required
+                  autoComplete="email"
+                  className={isEmailError(message) ? 'input-error' : ''}
+                  inputMode="email"
+                  spellCheck={false}
                 />
+                {isEmailError(message) && (
+                  <div className="input-error-message">{message}</div>
+                )}
               </div>
               <div className="register-field">
                 <label htmlFor="password" className="register-label">Heslo</label>
@@ -62,6 +87,7 @@ export default function Login() {
                     value={form.password}
                     onChange={handleChange}
                     required
+                    className={isPasswordError(message) ? 'input-error' : ''}
                   />
                   <span
                     className="register-password-eye"
@@ -85,6 +111,9 @@ export default function Login() {
                     )}
                   </span>
                 </div>
+                {isPasswordError(message) && (
+                  <div className="input-error-message">{message}</div>
+                )}
               </div>
               <Link to="/forgot-password" className="register-login-link" style={{ alignSelf: 'start', marginBottom: 8 }}>
                 Zapomněli jste heslo?
@@ -110,7 +139,9 @@ export default function Login() {
               <span className="have-an-account">Jste nový?</span>
               <Link to="/register" className="register-login-link">Založte si účet</Link>
             </div>
-               <div className="register-message">{message}</div>
+               {message && !isPasswordError(message) && !isEmailError(message) && (
+                 <div className="register-message">{message}</div>
+               )}
           </div>
         </div>
       </div>

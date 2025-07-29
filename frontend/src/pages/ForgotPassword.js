@@ -13,29 +13,70 @@ export default function ForgotPassword() {
   const [passwordTouched, setPasswordTouched] = useState(false);
   const [confirmTouched, setConfirmTouched] = useState(false);
   const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loadingEmail, setLoadingEmail] = useState(false);
+  const [loadingCode, setLoadingCode] = useState(false);
+  // Samostatný stav pro spinner v resend tlačítku
+  const [loadingResend, setLoadingResend] = useState(false);
+  const [loadingPassword, setLoadingPassword] = useState(false);
   const codeInputs = [React.useRef(), React.useRef(), React.useRef(), React.useRef(), React.useRef(), React.useRef()];
+
+  // Cooldown for resend code
+  const [resendCooldown, setResendCooldown] = useState(0);
+  React.useEffect(() => {
+    let timer;
+    if (resendCooldown > 0) {
+      timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
+
+  const handleResendCode = async () => {
+    if (resendCooldown > 0 || loadingResend) return;
+    setLoadingResend(true);
+    setMessage('');
+    try {
+      await axios.post('http://localhost:5000/auth/forgot-password', { email });
+      setMessage('Byl vám odeslán ověřovací kód na email.');
+      setResendCooldown(30);
+    } catch (err) {
+      setMessage('Chyba při odesílání emailu');
+    } finally {
+      setLoadingResend(false);
+    }
+  };
+
+  // Helper for robust error match
+  const isEmailError = msg => msg && (msg.toLowerCase().includes('neexistuje') || msg === 'Zadejte platnou e-mailovou adresu');
+  const isValidEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   // 1. krok: zadání emailu
   const handleSendEmail = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    if (!email || !isValidEmail(email)) {
+      setMessage('Zadejte platnou e-mailovou adresu');
+      return;
+    }
+    setLoadingEmail(true);
     setMessage('');
     try {
       await axios.post('http://localhost:5000/auth/forgot-password', { email });
       setStep(1);
       setMessage('Byl vám odeslán ověřovací kód na email.');
     } catch (err) {
-      setMessage(err.response?.data?.message || 'Chyba při odesílání emailu');
+      if (err.response?.data?.message && err.response.data.message.toLowerCase().includes('neexistuje')) {
+        setMessage('Uživatel s tímto emailem neexistuje');
+      } else {
+        setMessage(err.response?.data?.message || 'Chyba při odesílání emailu');
+      }
     } finally {
-      setLoading(false);
+      setLoadingEmail(false);
     }
   };
 
   // 2. krok: zadání kódu
   const handleVerifyCode = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setLoadingCode(true);
     setMessage('');
     try {
       await axios.post('http://localhost:5000/auth/verify-reset-code', { email, code: code.join('') });
@@ -44,7 +85,7 @@ export default function ForgotPassword() {
     } catch (err) {
       setMessage('Nesprávný kód');
     } finally {
-      setLoading(false);
+      setLoadingCode(false);
     }
   };
 
@@ -71,7 +112,7 @@ export default function ForgotPassword() {
       setMessage('Hesla se neshodují.');
       return;
     }
-    setLoading(true);
+    setLoadingPassword(true);
     setMessage('');
     try {
       await axios.post('http://localhost:5000/auth/reset-password', { email, code: code.join(''), newPassword });
@@ -80,7 +121,7 @@ export default function ForgotPassword() {
     } catch (err) {
       setMessage(err.response?.data?.message || 'Chyba při změně hesla');
     } finally {
-      setLoading(false);
+      setLoadingPassword(false);
     }
   };
 
@@ -105,17 +146,26 @@ export default function ForgotPassword() {
                 <div className="register-field">
                   <label htmlFor="email" className="register-label">E-mail</label>
                   <input
-                    type="email"
+                    type="text"
                     id="email"
                     name="email"
                     placeholder="Zadejte svůj e-mail"
                     value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    required
+                    onChange={e => {
+                      setEmail(e.target.value);
+                      if (isEmailError(message)) setMessage('');
+                    }}
+                    autoComplete="email"
+                    className={isEmailError(message) ? 'input-error' : ''}
+                    inputMode="email"
+                    spellCheck={false}
                   />
+                  {isEmailError(message) && (
+                    <div className="input-error-message">{message}</div>
+                  )}
                 </div>
-                <button type="submit" disabled={loading} style={{ minHeight: 48, height: 48, fontWeight: 500 }}>
-                  {loading ? <span className="spinner-in-btn" aria-label="Načítání"></span> : 'Odeslat kód'}
+                <button type="submit" disabled={loadingEmail} style={{ minHeight: 48, height: 48, fontWeight: 500 }}>
+                  {loadingEmail ? <span className="spinner-in-btn" aria-label="Načítání"></span> : 'Odeslat kód'}
                 </button>
               </form>
             )}
@@ -135,55 +185,96 @@ export default function ForgotPassword() {
                   >Upravit</button>
 
                 </div>
-                <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', margin: '24px 0' }}>
-                  {code.map((digit, idx) => (
-                    <input
-                      key={idx}
-                      ref={codeInputs[idx]}
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      maxLength={1}
-                      value={digit}
-                      onChange={e => {
-                        const val = e.target.value.replace(/[^0-9]/g, '');
-                        if (!val) return;
-                        const newCode = [...code];
-                        newCode[idx] = val;
-                        setCode(newCode);
-                        if (idx < 5 && val) codeInputs[idx + 1].current.focus();
-                      }}
-                      onKeyDown={e => {
-                        if (e.key === 'Backspace') {
-                          if (code[idx]) {
+                <div className="code-inputs-group">
+                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between' }}>
+                    {code.map((digit, idx) => {
+                      let inputClass = '';
+                      let borderColor = '#a39f9f';
+                      if (message === 'Nesprávný kód') {
+                        inputClass = 'input-error';
+                        borderColor = '#e53935';
+                      } else if (digit) {
+                        inputClass = 'code-input-filled';
+                        borderColor = '#1976d2';
+                      }
+                      return (
+                        <input
+                          key={idx}
+                          ref={codeInputs[idx]}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={1}
+                          value={digit}
+                          className={inputClass}
+                          onChange={e => {
+                            if (message === 'Nesprávný kód') setMessage('');
+                            const val = e.target.value.replace(/[^0-9]/g, '');
                             const newCode = [...code];
-                            newCode[idx] = '';
+                            newCode[idx] = val;
                             setCode(newCode);
-                          } else if (idx > 0) {
-                            codeInputs[idx - 1].current.focus();
-                          }
-                        }
-                      }}
-                      style={{
-                        width: 'fit-content !important',
-                        height: 'fit-content !important',
-                        fontSize: '1.5rem',
-                        textAlign: 'center',
-                        border: '2px solid #a39f9f',
-                        borderRadius: '8px',
-                        outline: 'none',
-                        background: '#fff',
-                      }}
-                      required
-                    />
-                  ))}
+                            if (val && idx < 5) codeInputs[idx + 1].current.focus();
+                          }}
+                          onKeyDown={e => {
+                            if (e.key === 'Backspace') {
+                              if (code[idx]) {
+                                const newCode = [...code];
+                                newCode[idx] = '';
+                                setCode(newCode);
+                                if (message === 'Nesprávný kód') setMessage('');
+                              } else if (idx > 0) {
+                                codeInputs[idx - 1].current.focus();
+                              }
+                            }
+                          }}
+                          style={{
+                            width: 'fit-content',
+                            height: 'fit-content',
+                            fontSize: '1.5rem',
+                            textAlign: 'center',
+                            border: `2px solid ${borderColor}`,
+                            borderRadius: '8px',
+                            outline: 'none',
+                            background: '#fff',
+                          }}
+                          required
+                        />
+                      );
+                    })}
+                  </div>
+                  {message === 'Nesprávný kód' && (
+                    <div className="input-error-message" style={{marginBottom: 12}}>{message}</div>
+                  )}
                 </div>
-                <button type="submit" disabled={code.some(d => !d) || loading} style={{ minHeight: 48, height: 48, fontWeight: 500 }}>
-                  {loading ? <span className="spinner-in-btn" aria-label="Načítání"></span> : 'Ověřit'}
+                <button
+                  type="submit"
+                  disabled={code.some(d => !d) || loadingCode}
+                  style={{ minHeight: 48, height: 48, fontWeight: 500 }}
+                >
+                  {loadingCode ? <span className="spinner-in-btn" aria-label="Načítání"></span> : 'Ověřit'}
                 </button>
-                {message && (
-                  <div className="register-message" style={{ marginTop: 12 }}>{message}</div>
-                )}
+                <span
+                  className={`resend-code-link${(resendCooldown > 0 || loadingResend) ? ' disabled' : ''}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => { if (resendCooldown === 0 && !loadingResend) handleResendCode(); }}
+                  onKeyDown={e => { if (e.key === 'Enter' && resendCooldown === 0 && !loadingResend) handleResendCode(); }}
+                  aria-disabled={resendCooldown > 0 || loadingResend}
+                  style={{
+                    color: resendCooldown > 0 || loadingResend ? '#aaa' : '#1976d2',
+                    cursor: resendCooldown > 0 || loadingResend ? 'not-allowed' : 'pointer',
+                    marginTop: 12,
+                    display: 'inline-block',
+                    fontWeight: 600,
+                    minWidth: 120,
+                    position: 'relative'
+                  }}
+                >
+                  {loadingResend
+                    ? <span className="spinner-in-btn" aria-label="Načítání"></span>
+                    : (resendCooldown > 0 ? `Zaslat znovu (${resendCooldown}s)` : 'Zaslat kód znovu')}
+                </span>
+                {/* Info hláška po odeslání kódu byla odstraněna na přání */}
               </form>
             )}
             {step === 2 && (
@@ -249,10 +340,10 @@ export default function ForgotPassword() {
                 </div>
                 <button
                   type="submit"
-                  disabled={loading || !passwordValidations.every(v => v.valid) || !newPassword || !confirmPassword || newPassword !== confirmPassword}
+                  disabled={loadingPassword || !passwordValidations.every(v => v.valid) || !newPassword || !confirmPassword || newPassword !== confirmPassword}
                   style={{ minHeight: 48, height: 48, fontWeight: 500 }}
                 >
-                  {loading ? <span className="spinner-in-btn" aria-label="Načítání"></span> : 'Nastavit nové heslo'}
+                  {loadingPassword ? <span className="spinner-in-btn" aria-label="Načítání"></span> : 'Nastavit nové heslo'}
                 </button>
               </form>
             )}

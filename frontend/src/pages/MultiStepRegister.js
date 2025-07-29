@@ -26,6 +26,8 @@ export default function MultiStepRegister() {
   const [passwordTouched, setPasswordTouched] = useState(false);
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const codeInputs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
+  // Nový stav pro spinner v resend tlačítku
+  const [loadingResend, setLoadingResend] = useState(false);
 
   // Načti email z query parametru při načtení komponenty
   useEffect(() => {
@@ -48,24 +50,45 @@ export default function MultiStepRegister() {
   const [registeredEmail, setRegisteredEmail] = useState('');
 
   // Krok 1: pouze posun na další krok
-  const handleEmailOnly = (e) => {
+  // Helper for robust error match
+  const isEmailExistsError = msg => msg && msg.toLowerCase().includes('existuje');
+  const isEmailError = msg => msg && (msg.toLowerCase().includes('existuje') || msg === 'Zadejte platnou e-mailovou adresu');
+  const isValidEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  const [loadingEmail, setLoadingEmail] = useState(false);
+  const handleEmailOnly = async (e) => {
     e.preventDefault();
-    setStep(1);
+    if (!form.email || !isValidEmail(form.email)) {
+      setMessage('Zadejte platnou e-mailovou adresu');
+      return;
+    }
     setMessage('');
+    setLoadingEmail(true);
+    try {
+      await axios.post('http://localhost:5000/auth/register', { email: form.email });
+      setStep(1);
+    } catch (err) {
+      setMessage(err.response?.data?.message || 'Chyba při registraci');
+    } finally {
+      setLoadingEmail(false);
+    }
   };
 
   // Krok 2: Heslo
   // Krok 2: pouze posun na další krok
   // Krok 2: po zadání hesla automaticky odešle kód na email a posune na krok 3
   const [loadingPassword, setLoadingPassword] = useState(false);
+  const [loadingCode, setLoadingCode] = useState(false);
+  const [loadingPersonal, setLoadingPersonal] = useState(false);
   const handlePassword = async (e) => {
     e.preventDefault();
     setMessage('');
     setLoadingPassword(true);
+    setLoadingCode(false);
     try {
       await axios.post('http://localhost:5000/auth/register', { email: form.email });
       setStep(2); // posun na krok ověření kódu
-      setMessage('Kód byl odeslán na váš email.');
+      setMessage('Kód byl zaslán na váš e-mail.');
     } catch (err) {
       setMessage(err.response?.data?.message || 'Chyba při odesílání kódu');
     } finally {
@@ -86,8 +109,9 @@ export default function MultiStepRegister() {
     return () => clearTimeout(timer);
   }, [resendCooldown]);
   const handleRequestCode = async () => {
-    if (resendCooldown > 0) return;
+    if (resendCooldown > 0 || loadingResend) return;
     setMessage('');
+    setLoadingResend(true);
     try {
       await axios.post('http://localhost:5000/auth/register', { email: form.email });
       setCodeRequested(true);
@@ -95,6 +119,8 @@ export default function MultiStepRegister() {
       setMessage('Kód byl odeslán na váš email.');
     } catch (err) {
       setMessage(err.response?.data?.message || 'Chyba při odesílání kódu');
+    } finally {
+      setLoadingResend(false);
     }
   };
 
@@ -102,19 +128,21 @@ export default function MultiStepRegister() {
   const handleVerifyCode = async (e) => {
     e.preventDefault && e.preventDefault();
     setMessage('');
+    setLoadingCode(true);
     const codeStr = Array.isArray(code) ? code.join('') : code;
     try {
       await axios.post('http://localhost:5000/auth/verify-code', { email: form.email, code: codeStr });
       setStep(3);
       setMessage('Email byl ověřen.');
     } catch (err) {
-      setMessage(err.response?.data?.message || 'Chybný kód');
+      setMessage('Nesprávný ověřovací kód');
     }
   };
 
   // Krok 4: Odeslání všeho na backend
   const handlePersonalData = async (e) => {
     e.preventDefault();
+    setLoadingPersonal(true);
     try {
       await axios.post('http://localhost:5000/auth/complete-profile', {
         email: form.email,
@@ -133,6 +161,9 @@ export default function MultiStepRegister() {
 
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    if (e.target.name === 'email' && isEmailError(message)) {
+      setMessage('');
+    }
   };
 
   // Validace hesla
@@ -164,9 +195,25 @@ export default function MultiStepRegister() {
                 <form className="register-form" onSubmit={handleEmailOnly}>
                   <div className="register-field">
                     <label htmlFor="email" className="register-label">E-mail</label>
-                    <input type="email" id="email" name="email" placeholder="priklad@mail.com" value={form.email} onChange={handleChange} required />
+                    <input
+                      type="text"
+                      id="email"
+                      name="email"
+                      placeholder="priklad@mail.com"
+                      value={form.email}
+                      onChange={handleChange}
+                      autoComplete="email"
+                      inputMode="email"
+                      spellCheck={false}
+                      className={isEmailError(message) ? 'input-error' : ''}
+                    />
+                    {isEmailError(message) && (
+                      <div className="input-error-message">{message}</div>
+                    )}
                   </div>
-                  <button type="submit">Pokračovat</button>
+                  <button type="submit" disabled={loadingEmail} style={{ minHeight: 48, height: 48, fontWeight: 500 }}>
+                    {loadingEmail ? <span className="spinner-in-btn" aria-label="Načítání"></span> : 'Pokračovat'}
+                  </button>
                   <div className="register-or">
                     <span>Nebo se přihlaste pomocí</span>
                     <div className="register-social-row">
@@ -184,7 +231,7 @@ export default function MultiStepRegister() {
                   </div>
                   <div className="register-terms">
                     Souhlasím s vytvořením účtu pomocí e-mailové adresy podle{' '}
-                    <a href="#">obchodních podmínek</a>.
+                    <a href="https://bear-servis.cz/">obchodních podmínek</a>.
                   </div>
            
               </>
@@ -273,59 +320,89 @@ export default function MultiStepRegister() {
                   <div className="register-password-header">
                     <span style={{ fontWeight: 'bold' }}>{form.email}</span>
                   </div>
-                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', margin: '24px 0' }}>
-                    {code.map((digit, idx) => (
-                      <input
-                        key={idx}
-                        ref={codeInputs[idx]}
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        maxLength={1}
-                        value={digit}
-                        onChange={e => {
-                          const val = e.target.value.replace(/[^0-9]/g, '');
-                          if (!val) return;
-                          const newCode = [...code];
-                          newCode[idx] = val;
-                          setCode(newCode);
-                          if (idx < 5 && val) codeInputs[idx + 1].current.focus();
-                        }}
-                        onKeyDown={e => {
-                          if (e.key === 'Backspace') {
-                            if (code[idx]) {
+                  <div className="code-inputs-group">
+                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between' }}>
+                      {code.map((digit, idx) => {
+                        let inputClass = '';
+                        let borderColor = '#a39f9f';
+                        // Only show error for exact 'Nesprávný ověřovací kód'
+                        const isCodeError = message === 'Nesprávný ověřovací kód';
+                        if (isCodeError) {
+                          inputClass = 'input-error';
+                          borderColor = '#e53935';
+                        } else if (digit) {
+                          inputClass = 'code-input-filled';
+                          borderColor = '#000';
+                        }
+                        return (
+                          <input
+                            key={idx}
+                            ref={codeInputs[idx]}
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            maxLength={1}
+                            value={digit}
+                            onChange={e => {
+                              const val = e.target.value.replace(/[^0-9]/g, '');
                               const newCode = [...code];
-                              newCode[idx] = '';
+                              newCode[idx] = val;
                               setCode(newCode);
-                            } else if (idx > 0) {
-                              codeInputs[idx - 1].current.focus();
-                            }
-                          }
-                        }}
-                        style={{
-                          width: 'fit-content !important', 
-                          height: 'fit-content !important',
-                          fontSize: '1.5rem',
-                          textAlign: 'center',
-                          border: '2px solid #a39f9f',
-                          borderRadius: '8px',
-                          outline: 'none',
-                          background: '#fff',
-                        }}
-                        required
-                      />
-                    ))}
+                              // Clear error on any change
+                              if (message === 'Nesprávný ověřovací kód') setMessage('');
+                              if (val && idx < 5) codeInputs[idx + 1].current.focus();
+                            }}
+                            onKeyDown={e => {
+                              if (e.key === 'Backspace') {
+                                if (code[idx]) {
+                                  const newCode = [...code];
+                                  newCode[idx] = '';
+                                  setCode(newCode);
+                                  if (message === 'Nesprávný ověřovací kód') setMessage('');
+                                } else if (idx > 0) {
+                                  codeInputs[idx - 1].current.focus();
+                                }
+                              }
+                            }}
+                            className={inputClass}
+                            style={{
+                              width: 'fit-content',
+                              height: 'fit-content',
+                              fontSize: '1.5rem',
+                              textAlign: 'center',
+                              border: `2px solid ${borderColor}`,
+                              borderRadius: '8px',
+                              outline: 'none',
+                              background: '#fff',
+                            }}
+                            required
+                          />
+                        );
+                      })}
+                    </div>
+                    {message === 'Nesprávný ověřovací kód' && (
+                      <div className="input-error-message" style={{marginBottom: 12}}>{message}</div>
+                    )}
                   </div>
-                  <button type="submit" disabled={code.some(d => !d)}>Ověřit</button>
+                  <button
+                    type="submit"
+                    disabled={code.some(d => !d)}
+                    style={{ minHeight: 48, height: 48, fontWeight: 500 }}
+                  >
+                    Ověřit
+                  </button>
                   <span
-                    className={`resend-code-link${resendCooldown > 0 ? ' disabled' : ''}`}
+                    className={`resend-code-link${(resendCooldown > 0 || loadingResend) ? ' disabled' : ''}`}
                     role="button"
                     tabIndex={0}
-                    onClick={() => { if (resendCooldown === 0) handleRequestCode(); }}
-                    onKeyDown={e => { if (e.key === 'Enter' && resendCooldown === 0) handleRequestCode(); }}
-                    aria-disabled={resendCooldown > 0}
+                    onClick={() => { if (resendCooldown === 0 && !loadingResend) handleRequestCode(); }}
+                    onKeyDown={e => { if (e.key === 'Enter' && resendCooldown === 0 && !loadingResend) handleRequestCode(); }}
+                    aria-disabled={resendCooldown > 0 || loadingResend}
+                    style={{ position: 'relative', minWidth: 120, display: 'inline-block' }}
                   >
-                    {resendCooldown > 0 ? `Zaslat znovu (${resendCooldown}s)` : 'Zaslat kód znovu'}
+                    {loadingResend
+                      ? <span className="spinner-in-btn" aria-label="Načítání"></span>
+                      : (resendCooldown > 0 ? `Zaslat znovu (${resendCooldown}s)` : 'Zaslat kód znovu')}
                   </span>
                 </form>
               </>
@@ -390,7 +467,7 @@ export default function MultiStepRegister() {
                 </form>
               </>
             )}
-            {step !== 3 && (
+            {step !== 3 && step !== 2 && (
               <div className="register-message">{message}</div>
             )}
           </div>
