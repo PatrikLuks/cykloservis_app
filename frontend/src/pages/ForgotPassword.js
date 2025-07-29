@@ -35,7 +35,7 @@ export default function ForgotPassword() {
     setLoadingResend(true);
     setMessage('');
     try {
-      await axios.post('http://localhost:5000/auth/forgot-password', { email });
+      await axios.post('http://localhost:5001/auth/forgot-password', { email });
       setMessage('Byl vám odeslán ověřovací kód na email.');
       setResendCooldown(30);
     } catch (err) {
@@ -59,7 +59,7 @@ export default function ForgotPassword() {
     setLoadingEmail(true);
     setMessage('');
     try {
-      await axios.post('http://localhost:5000/auth/forgot-password', { email });
+      await axios.post('http://localhost:5001/auth/forgot-password', { email });
       setStep(1);
       setMessage('Byl vám odeslán ověřovací kód na email.');
     } catch (err) {
@@ -79,7 +79,7 @@ export default function ForgotPassword() {
     setLoadingCode(true);
     setMessage('');
     try {
-      await axios.post('http://localhost:5000/auth/verify-reset-code', { email, code: code.join('') });
+      await axios.post('http://localhost:5001/auth/verify-reset-code', { email, code: code.join('') });
       setStep(2);
       setMessage('Kód ověřen, nastavte nové heslo.');
     } catch (err) {
@@ -115,7 +115,7 @@ export default function ForgotPassword() {
     setLoadingPassword(true);
     setMessage('');
     try {
-      await axios.post('http://localhost:5000/auth/reset-password', { email, code: code.join(''), newPassword });
+      await axios.post('http://localhost:5001/auth/reset-password', { email, code: code.join(''), newPassword });
       setStep(3);
       setMessage('Heslo bylo úspěšně změněno.');
     } catch (err) {

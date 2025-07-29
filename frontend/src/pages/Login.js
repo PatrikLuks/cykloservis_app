@@ -40,7 +40,7 @@ export default function Login() {
     setLoading(true);
     setMessage('');
     try {
-      await axios.post('http://localhost:5000/auth/login', { email: form.email, password: form.password });
+      await axios.post('http://localhost:5001/auth/login', { email: form.email, password: form.password });
       navigate('/onboarding');
     } catch (err) {
       setMessage(err.response?.data?.message || 'Chyba při přihlášení');

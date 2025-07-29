@@ -16,7 +16,7 @@ export default function VerifyEmail() {
         const payload = JSON.parse(atob(token.split('.')[1]));
         email = payload.email;
       } catch (e) {}
-      axios.get(`http://localhost:5000/auth/verify-email?token=${token}`)
+      axios.get(`http://localhost:5001/auth/verify-email?token=${token}`)
         .then(res => {
           setMessage(res.data.message);
           if (res.data.message === 'Email verified. You can continue registration.') {

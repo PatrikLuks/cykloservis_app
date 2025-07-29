@@ -24,7 +24,7 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5000/auth/register', form);
+      const res = await axios.post('http://localhost:5001/auth/register', form);
       setMessage('Registrace úspěšná! Zkontrolujte email pro ověření.');
     } catch (err) {
       setMessage(err.response?.data?.message || 'Chyba při registraci');

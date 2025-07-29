@@ -65,7 +65,7 @@ export default function MultiStepRegister() {
     setMessage('');
     setLoadingEmail(true);
     try {
-      await axios.post('http://localhost:5000/auth/register', { email: form.email });
+      await axios.post('http://localhost:5001/auth/register', { email: form.email });
       setStep(1);
     } catch (err) {
       setMessage(err.response?.data?.message || 'Chyba při registraci');
@@ -86,7 +86,7 @@ export default function MultiStepRegister() {
     setLoadingPassword(true);
     setLoadingCode(false);
     try {
-      await axios.post('http://localhost:5000/auth/register', { email: form.email });
+      await axios.post('http://localhost:5001/auth/register', { email: form.email });
       setStep(2); // posun na krok ověření kódu
       setMessage('Kód byl zaslán na váš e-mail.');
     } catch (err) {
@@ -113,7 +113,7 @@ export default function MultiStepRegister() {
     setMessage('');
     setLoadingResend(true);
     try {
-      await axios.post('http://localhost:5000/auth/register', { email: form.email });
+      await axios.post('http://localhost:5001/auth/register', { email: form.email });
       setCodeRequested(true);
       setResendCooldown(30); // 30s cooldown
       setMessage('Kód byl odeslán na váš email.');
@@ -131,7 +131,7 @@ export default function MultiStepRegister() {
     setLoadingCode(true);
     const codeStr = Array.isArray(code) ? code.join('') : code;
     try {
-      await axios.post('http://localhost:5000/auth/verify-code', { email: form.email, code: codeStr });
+      await axios.post('http://localhost:5001/auth/verify-code', { email: form.email, code: codeStr });
       setStep(3);
       setMessage('Email byl ověřen.');
     } catch (err) {
@@ -144,7 +144,7 @@ export default function MultiStepRegister() {
     e.preventDefault();
     setLoadingPersonal(true);
     try {
-      await axios.post('http://localhost:5000/auth/complete-profile', {
+      await axios.post('http://localhost:5001/auth/complete-profile', {
         email: form.email,
         password: form.password,
         firstName: form.firstName,
