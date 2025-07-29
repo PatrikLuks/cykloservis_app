@@ -86,14 +86,25 @@ export default function MultiStepRegister() {
     setLoadingPassword(true);
     setLoadingCode(false);
     try {
+<<<<<<< HEAD
       await axios.post('http://localhost:5001/auth/register', { email: form.email });
       setStep(2); // posun na krok ověření kódu
       setMessage('Kód byl zaslán na váš e-mail.');
+=======
+      await axios.post('http://localhost:5000/auth/save-password', {
+        email: form.email,
+        password: form.password
+      });
+>>>>>>> aedbf0f (Aktuální stav projektu - registrace, login, finallyRegistered, UX)
     } catch (err) {
-      setMessage(err.response?.data?.message || 'Chyba při odesílání kódu');
-    } finally {
+      setMessage('Chyba při ukládání hesla');
       setLoadingPassword(false);
+      return;
     }
+    setTimeout(() => {
+      setStep(2); // posun na krok ověření kódu
+      setLoadingPassword(false);
+    }, 300); // malá prodleva pro UX konzistenci
   };
 
   // Krok 3: nejprve odešle email na backend, pak čeká na zadání kódu
@@ -133,7 +144,7 @@ export default function MultiStepRegister() {
     try {
       await axios.post('http://localhost:5001/auth/verify-code', { email: form.email, code: codeStr });
       setStep(3);
-      setMessage('Email byl ověřen.');
+      // Nezobrazuj žádnou message v kroku dokončení registrace
     } catch (err) {
       setMessage('Nesprávný ověřovací kód');
     }
@@ -144,15 +155,22 @@ export default function MultiStepRegister() {
     e.preventDefault();
     setLoadingPersonal(true);
     try {
+<<<<<<< HEAD
       await axios.post('http://localhost:5001/auth/complete-profile', {
+=======
+      const data = {
+>>>>>>> aedbf0f (Aktuální stav projektu - registrace, login, finallyRegistered, UX)
         email: form.email,
-        password: form.password,
         firstName: form.firstName,
         lastName: form.lastName,
         birthDate: form.birthDate,
         gender: form.gender,
         location: form.location
-      });
+      };
+      if (form.password) {
+        data.password = form.password;
+      }
+      await axios.post('http://localhost:5000/auth/complete-profile', data);
       navigate('/onboarding');
     } catch (err) {
       setMessage(err.response?.data?.message || 'Chyba při registraci');
@@ -463,7 +481,16 @@ export default function MultiStepRegister() {
                       autoComplete="off"
                     />
                   </div>
-                  <button type="submit">Dokončit registraci</button>
+                  <button type="submit" disabled={loadingPersonal} style={{ position: 'relative' }}>
+                    {loadingPersonal ? (
+                      <span className="spinner-in-btn" aria-label="Načítání"></span>
+                    ) : (
+                      'Dokončit registraci'
+                    )}
+                  </button>
+                  {message && (
+                    <div className="input-error-message" style={{ marginTop: 16 }}>{message}</div>
+                  )}
                 </form>
               </>
             )}
