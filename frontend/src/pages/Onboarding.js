@@ -1,5 +1,5 @@
 import React from 'react';
-
+// Tento soubor byl odstraněn, stránka Onboarding již není používána.
 const Onboarding = () => {
   return (
     <div style={{ padding: '2rem', textAlign: 'center' }}>

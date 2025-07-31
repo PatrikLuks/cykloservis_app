@@ -44,18 +44,13 @@ export default function Login() {
     setLoading(true);
     setMessage('');
     try {
-<<<<<<< HEAD
-      await axios.post('http://localhost:5001/auth/login', { email: form.email, password: form.password });
-      navigate('/onboarding');
-=======
-      const res = await axios.post('http://localhost:5000/auth/login', { email: form.email, password: form.password });
+      const res = await axios.post('http://localhost:5001/auth/login', { email: form.email, password: form.password });
       if (res.data && res.data.finallyRegistered === false) {
         // Přesměruj na MultiStepRegister na krok 3 (dokončení profilu)
         navigate(`/register?email=${encodeURIComponent(form.email)}&step=3`);
       } else {
-        navigate('/onboarding');
+        navigate('/dashboard');
       }
->>>>>>> aedbf0f (Aktuální stav projektu - registrace, login, finallyRegistered, UX)
     } catch (err) {
       setMessage(err.response?.data?.message || 'Chyba při přihlášení');
     } finally {

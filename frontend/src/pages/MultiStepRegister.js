@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import './MultiStepRegister.css';
@@ -23,9 +23,8 @@ export default function MultiStepRegister() {
     location: ''
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [passwordTouched, setPasswordTouched] = useState(false);
   const [code, setCode] = useState(['', '', '', '', '', '']);
-  const codeInputs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
+  const codeInputs = React.useRef(Array.from({ length: 6 }, () => React.createRef()));
   // Nový stav pro spinner v resend tlačítku
   const [loadingResend, setLoadingResend] = useState(false);
 
@@ -47,11 +46,9 @@ export default function MultiStepRegister() {
   // Krok 1: Registrace
   // Krok 1: Email
   // Uložený email pro porovnání při návratu na krok 1
-  const [registeredEmail, setRegisteredEmail] = useState('');
 
   // Krok 1: pouze posun na další krok
   // Helper for robust error match
-  const isEmailExistsError = msg => msg && msg.toLowerCase().includes('existuje');
   const isEmailError = msg => msg && (msg.toLowerCase().includes('existuje') || msg === 'Zadejte platnou e-mailovou adresu');
   const isValidEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -78,24 +75,15 @@ export default function MultiStepRegister() {
   // Krok 2: pouze posun na další krok
   // Krok 2: po zadání hesla automaticky odešle kód na email a posune na krok 3
   const [loadingPassword, setLoadingPassword] = useState(false);
-  const [loadingCode, setLoadingCode] = useState(false);
   const [loadingPersonal, setLoadingPersonal] = useState(false);
   const handlePassword = async (e) => {
     e.preventDefault();
     setMessage('');
     setLoadingPassword(true);
-    setLoadingCode(false);
     try {
-<<<<<<< HEAD
       await axios.post('http://localhost:5001/auth/register', { email: form.email });
       setStep(2); // posun na krok ověření kódu
       setMessage('Kód byl zaslán na váš e-mail.');
-=======
-      await axios.post('http://localhost:5000/auth/save-password', {
-        email: form.email,
-        password: form.password
-      });
->>>>>>> aedbf0f (Aktuální stav projektu - registrace, login, finallyRegistered, UX)
     } catch (err) {
       setMessage('Chyba při ukládání hesla');
       setLoadingPassword(false);
@@ -108,7 +96,6 @@ export default function MultiStepRegister() {
   };
 
   // Krok 3: nejprve odešle email na backend, pak čeká na zadání kódu
-  const [codeRequested, setCodeRequested] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
   // Cooldown for resend button
@@ -125,7 +112,6 @@ export default function MultiStepRegister() {
     setLoadingResend(true);
     try {
       await axios.post('http://localhost:5001/auth/register', { email: form.email });
-      setCodeRequested(true);
       setResendCooldown(30); // 30s cooldown
       setMessage('Kód byl odeslán na váš email.');
     } catch (err) {
@@ -139,7 +125,6 @@ export default function MultiStepRegister() {
   const handleVerifyCode = async (e) => {
     e.preventDefault && e.preventDefault();
     setMessage('');
-    setLoadingCode(true);
     const codeStr = Array.isArray(code) ? code.join('') : code;
     try {
       await axios.post('http://localhost:5001/auth/verify-code', { email: form.email, code: codeStr });
@@ -155,11 +140,7 @@ export default function MultiStepRegister() {
     e.preventDefault();
     setLoadingPersonal(true);
     try {
-<<<<<<< HEAD
-      await axios.post('http://localhost:5001/auth/complete-profile', {
-=======
       const data = {
->>>>>>> aedbf0f (Aktuální stav projektu - registrace, login, finallyRegistered, UX)
         email: form.email,
         firstName: form.firstName,
         lastName: form.lastName,
@@ -170,8 +151,8 @@ export default function MultiStepRegister() {
       if (form.password) {
         data.password = form.password;
       }
-      await axios.post('http://localhost:5000/auth/complete-profile', data);
-      navigate('/onboarding');
+      await axios.post('http://localhost:5001/auth/complete-profile', data);
+      navigate('/dashboard');
     } catch (err) {
       setMessage(err.response?.data?.message || 'Chyba při registraci');
     }
@@ -273,7 +254,7 @@ export default function MultiStepRegister() {
                         name="password"
                         placeholder="Heslo"
                         value={form.password}
-                        onChange={e => { handleChange(e); setPasswordTouched(true); }}
+                        onChange={handleChange}
                         required
                         autoComplete="new-password"
                       />
@@ -343,7 +324,6 @@ export default function MultiStepRegister() {
                       {code.map((digit, idx) => {
                         let inputClass = '';
                         let borderColor = '#a39f9f';
-                        // Only show error for exact 'Nesprávný ověřovací kód'
                         const isCodeError = message === 'Nesprávný ověřovací kód';
                         if (isCodeError) {
                           inputClass = 'input-error';
@@ -355,7 +335,7 @@ export default function MultiStepRegister() {
                         return (
                           <input
                             key={idx}
-                            ref={codeInputs[idx]}
+                            ref={codeInputs.current[idx]}
                             type="text"
                             inputMode="numeric"
                             pattern="[0-9]*"
@@ -366,9 +346,8 @@ export default function MultiStepRegister() {
                               const newCode = [...code];
                               newCode[idx] = val;
                               setCode(newCode);
-                              // Clear error on any change
                               if (message === 'Nesprávný ověřovací kód') setMessage('');
-                              if (val && idx < 5) codeInputs[idx + 1].current.focus();
+                              if (val && idx < 5) codeInputs.current[idx + 1].current.focus();
                             }}
                             onKeyDown={e => {
                               if (e.key === 'Backspace') {
@@ -378,7 +357,7 @@ export default function MultiStepRegister() {
                                   setCode(newCode);
                                   if (message === 'Nesprávný ověřovací kód') setMessage('');
                                 } else if (idx > 0) {
-                                  codeInputs[idx - 1].current.focus();
+                                  codeInputs.current[idx - 1].current.focus();
                                 }
                               }
                             }}

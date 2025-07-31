@@ -207,6 +207,7 @@ router.post('/login',
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: 'Uživatel s tímto emailem neexistuje.' });
     if (!user.isVerified) return res.status(400).json({ message: 'Email není ověřen' });
+    if (!user.password) return res.status(400).json({ message: 'Uživatel nemá nastavené heslo. Dokončete registraci.' });
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Nesprávné heslo' });
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
