@@ -1,0 +1,44 @@
+/* Informační karta na dashboardu */
+.dashboard-info-card {
+  border-radius: 16px;
+  box-shadow: 0 4px 16px #0001;
+  background: #fff;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-height: 110px;
+  transition: box-shadow 0.2s, background 0.2s;
+}
+.dashboard-info-card-icon {
+  font-size: 36px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+.dashboard-info-card:hover {
+  box-shadow: 0 8px 32px #0002;
+  background: #f0f6ff;
+}
+.dashboard-profile-dropdown {
+  display: flex !important;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  top: 48px;
+  background: #1976d2;
+  color: #fff;
+  box-shadow: 0 4px 16px #0002;
+  border-radius: 12px;
+  min-width: 160px;
+  z-index: 10;
+  flex-direction: column;
+  transition: opacity 0.2s, visibility 0.2s;
+}
+.dashboard-profile-dropdown.open,
+.dashboard-profile-menu .dashboard-profile-dropdown {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}

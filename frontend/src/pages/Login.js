@@ -1,3 +1,4 @@
+import { Spinner, InputErrorMessage } from '../components/CommonUI';
 import { Link, useNavigate } from 'react-router-dom';
 
 import React, { useState, useEffect } from 'react';
@@ -90,7 +91,7 @@ export default function Login() {
                   spellCheck={false}
                 />
                 {isEmailError(message) && (
-                  <div className="input-error-message">{message}</div>
+                  <InputErrorMessage>{message}</InputErrorMessage>
                 )}
               </div>
               <div className="register-field">
@@ -129,7 +130,7 @@ export default function Login() {
                   </span>
                 </div>
                 {isPasswordError(message) && (
-                  <div className="input-error-message">{message}</div>
+                  <InputErrorMessage>{message}</InputErrorMessage>
                 )}
               </div>
               <Link to="/forgot-password" className="register-login-link" style={{ alignSelf: 'start', marginBottom: 8 }}>
@@ -137,7 +138,7 @@ export default function Login() {
               </Link>
               <button type="submit" disabled={loading} style={{ minHeight: 48, height: 48, fontWeight: 500 }}>
                 {loading ? (
-                  <span className="spinner-in-btn" aria-label="Načítání"></span>
+                  <Spinner />
                 ) : (
                   'Přihlásit se'
                 )}

@@ -1,8 +1,11 @@
+import { Spinner, InputErrorMessage } from '../components/CommonUI';
+import CodeInput from '../components/CodeInput';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import './MultiStepRegister.css';
 import RegisterNavbar from './RegisterNavbar';
+import { getPasswordValidations } from '../utils/passwordValidation';
 
 const steps = [
   'Vytvořit Účet',
@@ -172,14 +175,7 @@ export default function MultiStepRegister() {
   };
 
   // Validace hesla
-  const passwordValidations = [
-    { label: '1 velké písmeno', valid: /[A-Z]/.test(form.password) },
-    { label: '1 malé písmeno', valid: /[a-z]/.test(form.password) },
-    { label: '1 číslice', valid: /[0-9]/.test(form.password) },
-    { label: '1 speciální znak', valid: /[^A-Za-z0-9]/.test(form.password) },
-    { label: '8 znaků', valid: form.password.length >= 8 },
-    { label: 'Bez mezer', valid: !/\s/.test(form.password) }
-  ];
+  const passwordValidations = getPasswordValidations(form.password);
 
   return (
     <>
@@ -213,11 +209,11 @@ export default function MultiStepRegister() {
                       className={isEmailError(message) ? 'input-error' : ''}
                     />
                     {isEmailError(message) && (
-                      <div className="input-error-message">{message}</div>
+                      <InputErrorMessage>{message}</InputErrorMessage>
                     )}
                   </div>
                   <button type="submit" disabled={loadingEmail} style={{ minHeight: 48, height: 48, fontWeight: 500 }}>
-                    {loadingEmail ? <span className="spinner-in-btn" aria-label="Načítání"></span> : 'Pokračovat'}
+                    {loadingEmail ? <Spinner /> : 'Pokračovat'}
                   </button>
                   <div className="register-or">
                     <span>Nebo se přihlaste pomocí</span>
@@ -304,7 +300,7 @@ export default function MultiStepRegister() {
                       style={{ background: passwordValidations.every(v => v.valid) ? '#1976d2' : '#88accfff', color: '#fff', position: 'relative' }}
                     >
                       {loadingPassword ? (
-                        <span className="spinner-in-btn" aria-label="Načítání"></span>
+                        <Spinner />
                       ) : (
                         'Pokračovat'
                       )}
@@ -325,68 +321,7 @@ export default function MultiStepRegister() {
                   <div className="register-password-header">
                     <span style={{ fontWeight: 'bold' }}>{form.email}</span>
                   </div>
-                  <div className="code-inputs-group">
-                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between' }}>
-                      {code.map((digit, idx) => {
-                        let inputClass = '';
-                        let borderColor = '#a39f9f';
-                        const isCodeError = message === 'Nesprávný ověřovací kód';
-                        if (isCodeError) {
-                          inputClass = 'input-error';
-                          borderColor = '#e53935';
-                        } else if (digit) {
-                          inputClass = 'code-input-filled';
-                          borderColor = '#000';
-                        }
-                        return (
-                          <input
-                            key={idx}
-                            ref={codeInputs.current[idx]}
-                            type="text"
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            maxLength={1}
-                            value={digit}
-                            onChange={e => {
-                              const val = e.target.value.replace(/[^0-9]/g, '');
-                              const newCode = [...code];
-                              newCode[idx] = val;
-                              setCode(newCode);
-                              if (message === 'Nesprávný ověřovací kód') setMessage('');
-                              if (val && idx < 5) codeInputs.current[idx + 1].current.focus();
-                            }}
-                            onKeyDown={e => {
-                              if (e.key === 'Backspace') {
-                                if (code[idx]) {
-                                  const newCode = [...code];
-                                  newCode[idx] = '';
-                                  setCode(newCode);
-                                  if (message === 'Nesprávný ověřovací kód') setMessage('');
-                                } else if (idx > 0) {
-                                  codeInputs.current[idx - 1].current.focus();
-                                }
-                              }
-                            }}
-                            className={inputClass}
-                            style={{
-                              width: 'fit-content',
-                              height: 'fit-content',
-                              fontSize: '1.5rem',
-                              textAlign: 'center',
-                              border: `2px solid ${borderColor}`,
-                              borderRadius: '8px',
-                              outline: 'none',
-                              background: '#fff',
-                            }}
-                            required
-                          />
-                        );
-                      })}
-                    </div>
-                    {message === 'Nesprávný ověřovací kód' && (
-                      <div className="input-error-message" style={{marginBottom: 12}}>{message}</div>
-                    )}
-                  </div>
+                    <CodeInput code={code} setCode={setCode} message={message} codeInputs={codeInputs.current} />
                   <button
                     type="submit"
                     disabled={code.some(d => !d)}
@@ -404,7 +339,7 @@ export default function MultiStepRegister() {
                     style={{ position: 'relative', minWidth: 120, display: 'inline-block' }}
                   >
                     {loadingResend
-                      ? <span className="spinner-in-btn" aria-label="Načítání"></span>
+                      ? <Spinner />
                       : (resendCooldown > 0 ? `Zaslat znovu (${resendCooldown}s)` : 'Zaslat kód znovu')}
                   </span>
                 </form>
@@ -467,14 +402,14 @@ export default function MultiStepRegister() {
                     />
                   </div>
                   <button type="submit" disabled={loadingPersonal} style={{ position: 'relative' }}>
-                    {loadingPersonal ? (
-                      <span className="spinner-in-btn" aria-label="Načítání"></span>
+                  {loadingPersonal ? (
+                      <Spinner />
                     ) : (
                       'Dokončit registraci'
                     )}
                   </button>
                   {message && (
-                    <div className="input-error-message" style={{ marginTop: 16 }}>{message}</div>
+                    <InputErrorMessage style={{ marginTop: 16 }}>{message}</InputErrorMessage>
                   )}
                 </form>
               </>
