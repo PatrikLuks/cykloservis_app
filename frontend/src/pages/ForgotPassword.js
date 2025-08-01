@@ -10,7 +10,7 @@ export default function ForgotPassword() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [passwordTouched, setPasswordTouched] = useState(false);
+  // const [passwordTouched, setPasswordTouched] = useState(false); // odstraněno, nebylo využito
   const [confirmTouched, setConfirmTouched] = useState(false);
   const [message, setMessage] = useState('');
   const [loadingEmail, setLoadingEmail] = useState(false);
@@ -102,7 +102,7 @@ export default function ForgotPassword() {
   // 3. krok: nové heslo
   const handleSetPassword = async (e) => {
     e.preventDefault();
-    setPasswordTouched(true);
+    // setPasswordTouched(true); // odstraněno, nebylo využito
     setConfirmTouched(true);
     if (!passwordValidations.every(v => v.valid)) {
       setMessage('Heslo nesplňuje všechna kritéria.');
@@ -288,7 +288,7 @@ export default function ForgotPassword() {
                       name="newPassword"
                       placeholder="Nové heslo"
                       value={newPassword}
-                      onChange={e => { setNewPassword(e.target.value); setPasswordTouched(true); }}
+                      onChange={e => { setNewPassword(e.target.value); }}
                       required
                       autoComplete="new-password"
                     />

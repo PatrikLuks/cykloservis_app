@@ -1,12 +1,20 @@
 import { Link, useNavigate } from 'react-router-dom';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './MultiStepRegister.css';
 import RegisterNavbar from './RegisterNavbar';
 
 export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
+  // Načti email z query parametru při načtení komponenty
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const email = params.get('email');
+    if (email) {
+      setForm(f => ({ ...f, email }));
+    }
+  }, []);
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);

@@ -65,7 +65,13 @@ export default function MultiStepRegister() {
       await axios.post('http://localhost:5001/auth/register', { email: form.email });
       setStep(1);
     } catch (err) {
-      setMessage(err.response?.data?.message || 'Chyba při registraci');
+      const msg = err.response?.data?.message || '';
+      // Pokud email existuje, přesměruj na login s předvyplněným emailem
+      if (msg.toLowerCase().includes('existuje')) {
+        navigate(`/login?email=${encodeURIComponent(form.email)}`);
+      } else {
+        setMessage(msg || 'Chyba při registraci');
+      }
     } finally {
       setLoadingEmail(false);
     }
@@ -81,7 +87,7 @@ export default function MultiStepRegister() {
     setMessage('');
     setLoadingPassword(true);
     try {
-      await axios.post('http://localhost:5001/auth/register', { email: form.email });
+      await axios.post('http://localhost:5001/auth/save-password', { email: form.email, password: form.password });
       setStep(2); // posun na krok ověření kódu
       setMessage('Kód byl zaslán na váš e-mail.');
     } catch (err) {
