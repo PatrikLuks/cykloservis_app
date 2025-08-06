@@ -1,3 +1,93 @@
+/* Animace v pravém horním rohu dashboardu podle počasí */
+.weather-animation-corner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 100;
+  width: 90px;
+  height: 90px;
+  pointer-events: none;
+}
+.sun-rays-animation svg rect {
+  animation: sunRayAnim 2s linear infinite;
+}
+@keyframes sunRayAnim {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+.rain-animation svg rect {
+  animation: rainDropAnim 1.2s linear infinite;
+}
+@keyframes rainDropAnim {
+  0% { transform: translateY(0); opacity: 0.7; }
+  80% { transform: translateY(18px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 0.7; }
+}
+.clouds-animation svg ellipse {
+  animation: cloudMoveAnim 6s ease-in-out infinite alternate;
+}
+@keyframes cloudMoveAnim {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(10px); }
+}
+/* Animované pozadí pro kartu počasí */
+.weather-card-animated {
+  position: relative;
+  overflow: hidden;
+}
+.weather-card-bg-default {
+  background: linear-gradient(135deg, #e3f2fd 80%, #f7faff 100%);
+  animation: weatherGradientMove 8s linear infinite alternate;
+}
+.weather-card-bg-clear {
+  background: linear-gradient(135deg, #f7faff 80%, #ffe082 100%);
+  animation: weatherGradientMove 8s linear infinite alternate;
+}
+.weather-card-bg-rain {
+  background: linear-gradient(135deg, #90caf9 60%, #e3f2fd 100%);
+  animation: weatherGradientMove 8s linear infinite alternate;
+}
+.weather-card-bg-clouds {
+  background: linear-gradient(135deg, #bdbdbd 60%, #f7faff 100%);
+  animation: weatherGradientMove 8s linear infinite alternate;
+}
+.weather-card-bg-snow {
+  background: linear-gradient(135deg, #fff 80%, #e3f2fd 100%);
+  animation: weatherGradientMove 8s linear infinite alternate;
+}
+@keyframes weatherGradientMove {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+/* Responsivní styl pro kartu Moje Kola */
+.moje-kola-card {
+  width: 380px;
+  min-width: 320px;
+  max-width: 420px;
+  min-height: 540px;
+  padding: 48px 32px 40px 32px;
+  border-radius: 28px;
+  box-shadow: 0 8px 32px rgba(25, 118, 210, 0.18);
+  background: linear-gradient(135deg, #fff 80%, #e3f2fd 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+@media (max-width: 600px) {
+  .moje-kola-card {
+    width: 98vw;
+    min-width: unset;
+    max-width: unset;
+    left: 0 !important;
+    transform: none !important;
+    border-radius: 18px;
+    padding: 24px 8px 24px 8px;
+    min-height: 320px;
+  }
+}
 /* Informační karta na dashboardu */
 .dashboard-info-card {
   border-radius: 16px;
