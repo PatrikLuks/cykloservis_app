@@ -1,0 +1,74 @@
+# 🚲 Specifikace – Aplikace pro servis kol (verze pro vývojáře s GitHub Copilot)
+
+## 🔧 Modul: Registrace a zákaznický profil
+
+- Vytvoření profilu zákazníka:
+  - Povinné: email, heslo, PSČ
+  - Ověření: email / telefon
+  - Možnosti registrace: Google, Apple, Facebook
+  - Volitelné: profilový obrázek
+
+## 🔧 Modul: Objednávka servisu kola
+
+- Zákazník může:
+  - Vybrat konkrétní servis a mechanika (filtrace podle typu servisu: oprava, reklamace, odpružení)
+  - Vybrat požadovaný termín nebo využít první volný v kalendáři
+  - Zvolit možnost „Přidám kolo v servisu“ – bez zadávání údajů (mechanik je doplní při přijetí kola)
+
+## 🔧 Modul: Zadávání informací o kole
+
+- Povinné údaje:
+  - Typ kola (silniční, MTB, gravel, e-bike…)
+  - Fotka kola
+
+- Volitelné údaje:
+  - Výrobce, model, rok, barva
+  - Sériové číslo
+  - Specifikace komponent (řazení, odpružení, brzdy, ráfky, náboje, pláště, atd.)
+  - Fotografie komponent – volitelné, alternativa k ručnímu zadání
+
+- Komponenty propojeny se servisní logikou (např. reset km po výměně řetězu)
+
+## 🔧 Modul: Příjem kola servisem
+
+- Mechanik:
+  - Doplní chybějící info, přidá fotky, zaznamená datum a jméno
+  - Prochází cca 50 úkonů (checkboxy), vytváří kalkulaci (úkon + materiál)
+  - Označí schválené a odmítnuté úkony, vše se uloží do historie
+  - Kalkulace je exportovatelná (PDF/email)
+
+## 🔧 Modul: Servisní historie a správa kola
+
+- Po servisu:
+  - Reset počitadla km pro daný úkon (řetěz, brzdy…)
+  - Uložení servisní historie:
+    - Datum, seznam úkonů, fotky, počet km od posledního servisu
+  - Upozornění na blížící se servis (časová nebo km logika)
+  - Možnost napojení na Strava API
+  - Ruční zadávání km nebo hodin (např. pro enduro/sjezd)
+
+## 🔧 Modul: B2B – Firemní zákazníci
+
+- Objednávka sestavení nového kola:
+  - Výběr servisu, způsob doručení (osobně / PPL)
+  - Vyplnění údajů do formuláře pro přepravce (není nutné napojení API)
+
+- B2B feed:
+  - 1 příspěvek týdně na veřejný feed
+  - Formát: obrázek, text, odkaz, sociální modul (např. jako FB příspěvek)
+
+## 🔔 Modul: Notifikace a komunikace
+
+- Notifikace zákazníkovi:
+  - Přijetí kola, průběh opravy, schválení úkonů, dokončení opravy
+  - Upozornění na opotřebení komponent
+
+- Komunikace:
+  - Chat mezi zákazníkem a servisem (web / app)
+
+## 📲 UI/UX a technické požadavky
+
+- Responzivní UI (mobil i desktop)
+- Servisní kalendář pro správu zakázek
+- Automatická synchronizace servisních dat s profilem kola
+- Možnost sledovat stav jednotlivých komponent v čase

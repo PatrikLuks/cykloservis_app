@@ -121,32 +121,7 @@ const Dashboard = () => {
             <div style={{ position: 'absolute', right: 32, top: 90, zIndex: 20, maxWidth: 340, minWidth: 260 }}>
               {/* Animace v pravém horním rohu podle počasí */}
               {weather && (
-                <div className="weather-animation-corner">
-                  {weather.weather[0].main === 'Clear' && (
-                    <div className="sun-rays-animation">
-                      <svg width="80" height="80" viewBox="0 0 80 80">
-                        <circle cx="40" cy="40" r="18" fill="#ffe082" />
-                        {[...Array(12)].map((_, i) => (
-                          <rect key={i} x="39" y="4" width="2" height="16" fill="#ffd54f"
-                            style={{transform: `rotate(${i*30}deg)`, transformOrigin: '40px 40px'}} />
-                        ))}
-                      </svg>
-                    </div>
-                  )}
-                  {weather.weather[0].main === 'Rain' && (
-                    <div className="rain-animation">
-                      <svg width="80" height="80" viewBox="0 0 80 80">
-                        <ellipse cx="40" cy="30" rx="22" ry="12" fill="#90caf9" />
-                        {[...Array(8)].map((_, i) => (
-                          <rect key={i} x={20+i*7} y="42" width="3" height="18" rx="2" fill="#2196f3" opacity="0.7" />
-                        ))}
-                      </svg>
-                    </div>
-                  )}
-                  {weather.weather[0].main === 'Clouds' && (
-                    null
-                  )}
-                </div>
+                null
               )}
               <WeatherCard
                 weather={weather}
@@ -183,7 +158,7 @@ const Dashboard = () => {
               <div style={{ marginLeft: 360 }}>
                 <h1>Vítejte v klientském centru Cykloservisu!</h1>
                 <p>Zde najdete správu svých kol, součástek, věrnostní program a další funkce.</p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 32, marginTop: 32 }}>
+                <div className="dashboard-infocards-grid">
                   <InfoCard icon="🎁" title="Věrnostní body" value="1 250 bodů" background="#fff" />
                   <InfoCard icon="🔧" title="Servis" value="Objednaný: 3. 8. 2025" background="#f7faff" />
                   <InfoCard icon="📢" title="Oznámení" value="Nová zpráva od technika" background="#f7faff" />

@@ -1,0 +1,170 @@
+﻿🔧 Modul: Objednávka servisu kola
+0. Vytvoření profilu zákazníka. 
+* klasika email, heslo, psč 
+* oveření emailu / telefonu
+* registrace pomocí google, apple, facebook
+* profilový obrázek.
+1. Možnosti vytvoření servisní objednávky
+Zákazník může:
+* Vybrat servis a konkrétního servisáka. (podle toho co potřebuješ)
+
+* Zadat požadovaný termín nebo si nechat přiřadit první volný termín z kalendáře.
+
+* Označit volbu „Přidám kolo v servisu“ – v takovém případě nezadává informace o kole, ale nechá jejich zadání na servisákovi při přijetí kola. ( tohle je na pováženou protože by bylo fajn udělat páku dostatečně intuitivní někdo se v tom třeba nevyzná a nechá to udělat odborníka ale zase aby nás to nezahlcovalo a aby to nenarušilo logiku)
+* Při zadání servisaka bude ještě filtrace podle toho jestli potřebuje servis kola, reklamaci, servis odpružení aby jsme dokázali filtrovat servisaka podle toho co dělají za práci. 
+* 
+________________
+
+
+2. Zadávání informací o kole
+Povinné údaje:
+   * Typ kola (např. silniční, MTB, gravel, e-bike…)
+
+
+   * Fotka kola
+
+Volitelné údaje:
+      * Výrobce / značka rámu
+
+      * Sériové číslo 
+      * Model
+
+      * Rok výroby
+
+      * Barva
+
+      * Hlavové složení (typ)
+
+      * Značka pohonu a typ pohonu (např. SRAM NX 1x12)
+
+      * Značka odpružení a typ (např. RockShox Lyrik Ultimate)
+
+      * Brzdy – značka a model (např. Formula Cura 4)
+
+      * Specifika (např. vlastní úpravy)
+
+      * náboje 
+      * ráfky 
+      * představec 
+      * řídítka 
+      * gripy
+      * brzdové kotouče (přední, zadní)
+      * brzdové desky (přední, zadní)
+      * špice (driveside,nondriveside)
+      * Pláště (přední, zadní)
+
+
+(dáme možnost vložení fotografii komponentů? nenafoukne to apku? na povážení.)
+U každého popisu dílu / komponenty lze přidat fotografii.
+Pokud si zákazník není jistý přesným názvem dílu, může ho pouze vyfotit.
+
+
+Kolonky komponentů budou napojeny na servisní aplikaci tak aby pokud například zákazník přijede na servis kde bude výměna řetězu tak se mu po dokončení servisu vynuluje ukazatel počtu km na řetězu aby věděl že ten je po servisu.
+
+
+
+
+________________
+
+
+3. Komunikace a doplnění informací o kole při přijetí servisem
+Servisák:
+         * Doplní chybějící informace o kole, pokud zákazník zvolil možnost „Přidám kolo v servisu“.
+
+         * Vytvoří detailní zápis a připojí fotografie kola při příjmu.
+
+         * Zaznamená datum a čas přijetí a jméno servisáka.
+
+         * Provede příjem kola který se skládá z cca 50ti úkonů které jeden po jednom projde a zaklikne zda lí bude potřeba či ne. Úkony budou mít k sobě připojené cenovky úkonu plus budeš moci přidat cenu materiálu a během tohohle úkonu se vytvoří i cenová kalkulace z cen úkonu a zadaných cen materiálu. Poté se projde tahle cenová kalkulace a zkontroluji se ze zadaných úkonu které je potřeba udělat, úkony které je zákazník ochotný udělat. 
+         * Poté se co se schválí kalkulace se vytiskne a nebo spis zašle do e-mailu seznam úkonu navržených mechanikem a seznam úkonu které se budou doopravdy dělat.
+         * Ukládat tyhle příjmuté i odmítnuté úkony vždy v servisní historii ke konkrétního servisu.
+________________
+
+
+4. Správa profilu kola a servisní historie u zákazníka
+            * Po vyhotovení servisního úkonu (např. výměna řetězu, výměna brzdových destiček) se:
+
+               * Aktualizuje servisní profil kola.
+
+               * Resetuje počítadlo ujetých kilometrů pro daný servisní úkon (řetěz, brzdy, odpružení…).
+
+                  * V profilu kola zákazník vidí servisní historii, s jednotlivými servisy které po rozkliknutí zobrazí:
+
+                     * seznamem servisních úkonů
+
+                     * Datem provedení
+
+                     * Fotkami
+
+                     * Počítadly km / dnů od posledního úkonu pro jednotlivé komponenty
+
+                        * Na základě dat systém zobrazí zákazníkovi stav a upozornění na blížící se potřebu servisu nebo výměny. Zde budou k určitým úkonům nastavené buď kilometrové nebo časové upozornění. Například odvzdušnění brzd vyskočí zákazníkovi 1 ročne. Upozornění budou nastavena dle doporučených servisních intervalů. 
+                        * Napojení přes API pro stravu 
+                        * možnost ručního zadávání ujetých kilometrů
+                        * (pro kategorii sjezd a enduro možnost přidání počtu hodin sjezdu pro kalkulaci hodin servisu odpružení.
+
+________________
+
+
+🔧 Modul: B2B (firemní zákazníci, partneři)
+1. Objednání sestavení nového kola
+                           * Stejný proces jako objednávka servisu, s volbou servisu a servisáka.
+
+                           * Zadání způsobu doručení kola:
+
+                              * Osobní doručení servisu
+
+                              * Doručení přepravcem (např. PPL)
+
+                                 * Při volbě dopravy se zobrazí formulář pro vyplnění údajů pro přepravce (jméno, adresa, telefon, email).
+
+                                 * Není nutné API napojení na dopravce, postačí generování a tisk formuláře.
+
+________________
+
+
+2. B2B feed – novinky od partnerů
+                                    * B2B uživatelé mohou přidávat příspěvky do veřejného feedu.
+
+                                    * Feed je dostupný pro všechny zákazníky.
+
+                                    * Každý B2B partner může přidat maximálně 1 příspěvek týdně, aby se zabránilo spamu.
+
+                                    * Formát příspěvku:
+
+                                       * Fotografie / obrázek
+
+                                       * Krátký popis / text
+
+                                       * Odkaz na web nebo akci
+
+                                       * Modul sociální sítě (vzor aby to vypadalo jak příspěvky na fb třeba)
+________________
+
+
+🔔 Notifikace a komunikace
+                                          * Notifikace zákazníkům o:
+
+                                             * Přijetí kola do servisu
+
+                                             * Postupu servisu (čekání na díly, práce v procesu)
+                                             * Požadavek o schválení servisních úkonů mimo dohodnutý servis
+                                             * Hotovém servisu a připravenosti k vyzvednutí
+
+                                             * Upozornění na opotřebení komponent na základě km a servisních dat
+
+                                                * Komunikace mezi zákazníkem a servisem přes chat v aplikaci/webu.
+
+________________
+
+
+Další požadavky:
+                                                   * Formuláře a uživatelské rozhraní musí být responzivní, vhodné pro mobilní telefony i desktop.
+
+                                                   * Servisní kalendář umožní servisákům spravovat zakázky a jejich stavy.
+
+                                                   * Servisní historie kola je přístupná zákazníkovi kdykoli v jeho profilu.
+
+                                                   * Při doplnění servisních úkonů se informace automaticky aktualizují v profilu kola.
+
+                                                   * Zákazník může sledovat nejen jednotlivé zakázky, ale i stav komponent kola v čase.

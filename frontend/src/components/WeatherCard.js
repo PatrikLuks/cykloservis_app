@@ -44,14 +44,10 @@ const WeatherCard = ({ weather, weatherLoading, weatherError, forecast, forecast
             maxWidth: 340,
             position: 'relative',
           }}>
-          {/* Ikona počasí + animace (pouze jedna) */}
+          {/* V záhlaví pouze jedno emoji počasí, žádný obrázek navíc */}
           <div style={{ fontSize: 44, marginBottom: 0, filter: 'drop-shadow(0 2px 8px #1976d220)' }}>
             {getWeatherIcon(weather.weather[0].main)}
           </div>
-          {/* Ikona z OpenWeatherMap zobrazena pouze pokud není Clouds */}
-          {weather.weather[0].main !== 'Clouds' && (
-            <img src={`https://openweathermap.org/img/wn/${weather.weather[0].icon}@2x.png`} alt={weather.weather[0].description} style={{width: 54, height: 54, marginBottom: 4, filter:'drop-shadow(0 2px 8px #1976d220)'}} />
-          )}
           <div style={{ fontWeight: 800, fontSize: 19, color: '#1976d2', marginBottom: 1, textShadow:'0 2px 8px #fff8' }}>{weather.name}</div>
           <div style={{ fontSize: 21, fontWeight: 800, color: '#222', marginBottom: 1, textShadow:'0 2px 8px #fff8' }}>{Math.round(weather.main.temp)}°C <span style={{fontWeight:400, fontSize:13, color:'#1976d2'}}>({weather.weather[0].description})</span></div>
           <div style={{ fontSize: 13, color: '#444', marginBottom: 1 }}>Pocitově: <b>{Math.round(weather.main.feels_like)}°C</b></div>
