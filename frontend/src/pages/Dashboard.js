@@ -6,14 +6,15 @@ import RegisterHero from '../img/Register-hero.png';
 // Viz obrázek: /Applications/cykloservis_app/ite.png
 import React, { useState, useEffect } from 'react';
 import { ReactComponent as Logo } from '../img/BIKESERVIS.svg';
+import { Link } from 'react-router-dom';
 import '../App.css';
 import './DashboardCustom.css';
 
 const sideMenuItems = [
-  { icon: '🚲', label: 'Moje kola', link: '#' },
-  { icon: '🔩', label: 'Součástky', link: '#' },
-  { icon: '🤖', label: 'AI chat', link: '#' },
-  { icon: '🎁', label: 'Věrnostní program', link: '#' },
+  { icon: '🚲', label: 'Moje kola', link: '/dashboard?tab=moje-kola' },
+  { icon: '🔩', label: 'Součástky', link: '/dashboard?tab=soucastky' },
+  { icon: '🤖', label: 'AI chat', link: '/dashboard?tab=ai-chat' },
+  { icon: '🎁', label: 'Věrnostní program', link: '/dashboard?tab=vernost' },
 ];
 
 
@@ -82,15 +83,15 @@ const Dashboard = () => {
         {/* Levé vertikální menu */}
         <aside className="dashboard-sidemenu">
           <div className="dashboard-logo-container">
-            <a href="/dashboard">
+            <Link to="/dashboard">
               <Logo className="dashboard-logo" />
-            </a>
+            </Link>
           </div>
           <nav className="dashboard-sidemenu-nav">
             {sideMenuItems.map((item, idx) => (
-              <a key={idx} href={item.link} className="dashboard-sidemenu-item" title={item.label}>
+              <Link key={idx} to={item.link} className="dashboard-sidemenu-item" title={item.label}>
                 <span className="dashboard-sidemenu-icon">{item.icon}</span>
-              </a>
+              </Link>
             ))}
           </nav>
         </aside>
@@ -98,6 +99,12 @@ const Dashboard = () => {
         {/* Hlavní obsah s horizontálním menu */}
         <main className="dashboard-main">
           <header className="dashboard-header">
+            {/* Horizontální menu sekcí */}
+            <nav className="dashboard-topmenu" aria-label="Sekce dashboardu">
+              <Link to="/dashboard?tab=servisni-kniha" className="dashboard-topmenu-item">Servisní kniha</Link>
+              <Link to="/dashboard?tab=poradenstvi" className="dashboard-topmenu-item">Poradenství</Link>
+              <Link to="/dashboard?tab=prijmovy-formular" className="dashboard-topmenu-item">Příjmový formulář</Link>
+            </nav>
             {/* Profil v pravém horním rohu */}
             <div style={{ position: 'absolute', right: 32, top: 32, zIndex: 100 }}>
               <button
