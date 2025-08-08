@@ -2,7 +2,7 @@ import { Spinner, InputErrorMessage } from '../components/CommonUI';
 import { Link, useNavigate } from 'react-router-dom';
 
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/apiClient';
 import './MultiStepRegister.css';
 import RegisterNavbar from './RegisterNavbar';
 
@@ -53,7 +53,10 @@ export default function Login() {
     setLoading(true);
     setMessage('');
     try {
-      const res = await axios.post('http://localhost:5001/auth/login', { email: form.email, password: form.password });
+  const res = await api.post('/auth/login', { email: form.email, password: form.password });
+      if (res.data?.token) {
+        try { localStorage.setItem('token', res.data.token); } catch {}
+      }
       if (res.data && res.data.finallyRegistered === false) {
         // Přesměruj na MultiStepRegister na krok 3 (dokončení profilu)
         navigate(`/register?email=${encodeURIComponent(form.email)}&step=3`);

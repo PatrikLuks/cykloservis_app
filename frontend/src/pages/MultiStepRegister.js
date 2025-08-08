@@ -1,7 +1,7 @@
 import { Spinner, InputErrorMessage } from '../components/CommonUI';
 import CodeInput from '../components/CodeInput';
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/apiClient';
 import { useNavigate } from 'react-router-dom';
 import './MultiStepRegister.css';
 import RegisterNavbar from './RegisterNavbar';
@@ -65,7 +65,7 @@ export default function MultiStepRegister() {
     setMessage('');
     setLoadingEmail(true);
     try {
-      await axios.post('http://localhost:5001/auth/register', { email: form.email });
+  await api.post('/auth/register', { email: form.email });
       setStep(1);
     } catch (err) {
       const msg = err.response?.data?.message || '';
@@ -90,7 +90,7 @@ export default function MultiStepRegister() {
     setMessage('');
     setLoadingPassword(true);
     try {
-      await axios.post('http://localhost:5001/auth/save-password', { email: form.email, password: form.password });
+  await api.post('/auth/save-password', { email: form.email, password: form.password });
       setStep(2); // posun na krok ověření kódu
       setMessage('Kód byl zaslán na váš e-mail.');
     } catch (err) {
@@ -120,7 +120,7 @@ export default function MultiStepRegister() {
     setMessage('');
     setLoadingResend(true);
     try {
-      await axios.post('http://localhost:5001/auth/register', { email: form.email });
+  await api.post('/auth/register', { email: form.email });
       setResendCooldown(30); // 30s cooldown
       setMessage('Kód byl odeslán na váš email.');
     } catch (err) {
@@ -136,7 +136,7 @@ export default function MultiStepRegister() {
     setMessage('');
     const codeStr = Array.isArray(code) ? code.join('') : code;
     try {
-      await axios.post('http://localhost:5001/auth/verify-code', { email: form.email, code: codeStr });
+  await api.post('/auth/verify-code', { email: form.email, code: codeStr });
       setStep(3);
       // Nezobrazuj žádnou message v kroku dokončení registrace
     } catch (err) {
@@ -160,7 +160,7 @@ export default function MultiStepRegister() {
       if (form.password) {
         data.password = form.password;
       }
-      await axios.post('http://localhost:5001/auth/complete-profile', data);
+  await api.post('/auth/complete-profile', data);
       navigate('/dashboard');
     } catch (err) {
       setMessage(err.response?.data?.message || 'Chyba při registraci');

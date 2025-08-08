@@ -40,6 +40,10 @@ app.use('/auth/reset-password', sensitiveLimiter);
 app.use('/auth', require('./routes/auth'));
 // Admin routes
 app.use('/admin', require('./routes/admin'));
+// Bikes routes
+app.use('/bikes', require('./routes/bikes'));
+// Service requests routes
+app.use('/service-requests', require('./routes/serviceRequests'));
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
@@ -47,6 +51,10 @@ mongoose.connect(process.env.MONGO_URI)
 
 app.get('/', (req, res) => {
   res.send('Bikeapp backend running');
+});
+// Health endpoint pro monitoring a readiness
+app.get('/api/health/health', (req, res) => {
+  res.status(200).json({ status: 'ok', uptime: process.uptime() });
 });
 
 const PORT = process.env.PORT || 5001;

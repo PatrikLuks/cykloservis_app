@@ -6,6 +6,7 @@ import MultiStepRegister from './pages/MultiStepRegister';
 import VerifyEmail from './pages/VerifyEmail';
 import Dashboard from './pages/Dashboard';
 import ForgotPassword from './pages/ForgotPassword';
+import MyBikes from './pages/MyBikes';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+  <Route path="/my-bikes" element={<MyBikes />} />
       </Routes>
     </Router>
   );

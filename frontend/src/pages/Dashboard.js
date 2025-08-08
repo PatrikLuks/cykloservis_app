@@ -6,12 +6,12 @@ import RegisterHero from '../img/Register-hero.png';
 // Viz obrázek: /Applications/cykloservis_app/ite.png
 import React, { useState, useEffect } from 'react';
 import { ReactComponent as Logo } from '../img/BIKESERVIS.svg';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import '../App.css';
 import './DashboardCustom.css';
 
 const sideMenuItems = [
-  { icon: '🚲', label: 'Moje kola', link: '/dashboard?tab=moje-kola' },
+  { icon: '🚲', label: 'Moje kola', link: '/my-bikes' },
   { icon: '🔩', label: 'Součástky', link: '/dashboard?tab=soucastky' },
   { icon: '🤖', label: 'AI chat', link: '/dashboard?tab=ai-chat' },
   { icon: '🎁', label: 'Věrnostní program', link: '/dashboard?tab=vernost' },
@@ -19,6 +19,7 @@ const sideMenuItems = [
 
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [forecast, setForecast] = useState(null);
   const [forecastLoading, setForecastLoading] = useState(true);
   const [forecastError, setForecastError] = useState('');
@@ -121,6 +122,13 @@ const Dashboard = () => {
                   <button type="button" className="dashboard-profile-dropdown-btn">Profil</button>
                   <button type="button" className="dashboard-profile-dropdown-btn">Nastavení</button>
                   <button type="button" className="dashboard-profile-dropdown-btn">Oznámení</button>
+                  <button
+                    type="button"
+                    className="dashboard-profile-dropdown-btn"
+                    onClick={() => { try { localStorage.removeItem('token'); } catch {}; navigate('/login'); }}
+                  >
+                    Odhlásit
+                  </button>
                 </div>
               )}
             </div>
@@ -160,7 +168,7 @@ const Dashboard = () => {
                   <div style={{ fontWeight: 700, color: '#1976d2', fontSize: 17 }}>Poslední servis: 3. 8. 2025</div>
                   <div style={{ fontSize: 15, color: '#444', marginTop: 4 }}>Další servis za 120 km</div>
                 </div>
-                <button style={buttonStyle}>Spravovat kola</button>
+                <Link to="/my-bikes"><button style={buttonStyle}>Spravovat kola</button></Link>
               </div>
               <div style={{ marginLeft: 360 }}>
                 <h1>Vítejte v klientském centru Cykloservisu!</h1>
