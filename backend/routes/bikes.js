@@ -21,6 +21,7 @@ function handleValidation(req, res) {
 
 // Konstanty & pomocné funkce
 const MAX_IMAGE_BASE64_LENGTH = 1_200_000; // znaky (~ <1.2MB)
+const MAX_IMAGE_DECODED_BYTES = 900_000; // ~0.9MB skutečných dekódovaných dat
 const MAX_BIKES_PER_USER = parseInt(process.env.MAX_BIKES_PER_USER || '100', 10);
 const STRING_FIELDS = ['title','type','manufacturer','model','driveBrand','driveType','color','brakes','suspension','suspensionType','specs','imageUrl'];
 
@@ -110,10 +111,17 @@ router.post('/',
 			}
 			if (req.body.imageUrl) {
 				if (req.body.imageUrl.length > MAX_IMAGE_BASE64_LENGTH) {
-					return res.status(413).json({ error: 'Obrázek je příliš velký' });
+					return res.status(413).json({ error: 'Obrázek je příliš velký (délka)' });
 				}
-				if (!/^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/.test(req.body.imageUrl)) {
+				const m = req.body.imageUrl.match(/^data:image\/(png|jpe?g|webp);base64,([A-Za-z0-9+/=]+)$/);
+				if (!m) {
 					return res.status(400).json({ error: 'Neplatný formát obrázku.' });
+				}
+				// Odhad skutečné velikosti: každý 4 znaky base64 ~ 3 bajty
+				const b64Payload = m[2];
+				const estimatedBytes = Math.floor((b64Payload.length * 3) / 4) - (b64Payload.endsWith('==') ? 2 : b64Payload.endsWith('=') ? 1 : 0);
+				if (estimatedBytes > MAX_IMAGE_DECODED_BYTES) {
+					return res.status(413).json({ error: 'Obrázek je příliš velký (decoded)' });
 				}
 			}
 			const payload = sanitize(req.body);
@@ -163,10 +171,16 @@ router.put('/:id', [
 	try {
 		if (req.body.imageUrl) {
 			if (req.body.imageUrl.length > MAX_IMAGE_BASE64_LENGTH) {
-				return res.status(413).json({ error: 'Obrázek je příliš velký' });
+				return res.status(413).json({ error: 'Obrázek je příliš velký (délka)' });
 			}
-			if (!/^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/.test(req.body.imageUrl)) {
+			const m = req.body.imageUrl.match(/^data:image\/(png|jpe?g|webp);base64,([A-Za-z0-9+/=]+)$/);
+			if (!m) {
 				return res.status(400).json({ error: 'Neplatný formát obrázku.' });
+			}
+			const b64Payload = m[2];
+			const estimatedBytes = Math.floor((b64Payload.length * 3) / 4) - (b64Payload.endsWith('==') ? 2 : b64Payload.endsWith('=') ? 1 : 0);
+			if (estimatedBytes > MAX_IMAGE_DECODED_BYTES) {
+				return res.status(413).json({ error: 'Obrázek je příliš velký (decoded)' });
 			}
 		}
 		const update = sanitize(req.body);
@@ -240,11 +254,17 @@ router.post('/:id/image', [param('id').isMongoId()], requireAuth, upload.single(
 		const fullPath = path.join(uploadDir, filename);
 		fs.writeFileSync(fullPath, req.file.buffer);
 		const relative = `/uploads/bikes/${filename}`;
-		const doc = await Bike.findOneAndUpdate(
-			{ _id: req.params.id, ownerEmail: req.user.email.toLowerCase() },
-			{ $set: { imageUrl: relative } },
-			{ new: true }
-		);
+		// Najdi starý obrázek kvůli úklidu
+		const current = await Bike.findOne({ _id: req.params.id, ownerEmail: req.user.email.toLowerCase() });
+		if (!current) return res.status(404).json({ error: 'Not found' });
+		const oldImage = current.imageUrl && current.imageUrl.startsWith('/uploads/bikes/') ? current.imageUrl : null;
+		current.imageUrl = relative;
+		await current.save();
+		if (oldImage && oldImage !== relative) {
+			const oldPath = path.join(process.cwd(), oldImage.replace('/uploads/bikes/','uploads/bikes/'));
+			fs.promises.unlink(oldPath).catch(()=>{});
+		}
+		const doc = current;
 		if (!doc) return res.status(404).json({ error: 'Not found' });
 		auditLog('bike_image_upload', req.user.email, { bikeId: req.params.id, filename });
 		res.json(doc);

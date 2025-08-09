@@ -29,8 +29,8 @@ Všechny níže uvedené endpointy kromě administrátorského hard delete vyža
 ## Rate limits & limity
 - POST /bikes: max 30 požadavků / 15 min / IP (konfigurovatelné ENV `CREATE_BIKE_RATE_MAX`).
 - Maximální počet kol na uživatele: `MAX_BIKES_PER_USER` (default 100, env proměnná).
-- Obrázky Base64: max ~1.2MB délka řetězce, MIME povoleno png|jpg|jpeg|webp.
-- Multipart upload: max 1MB na soubor (serverový limit multeru).
+- Obrázky Base64: max ~1.2MB délka řetězce + odhad dekódovaných dat < ~0.9MB, MIME povoleno png|jpg|jpeg|webp.
+- Multipart upload: max 1MB na soubor (serverový limit multeru), ukládá se do `BIKES_UPLOAD_DIR` (default `uploads/bikes`).
 
 ## Endpointy
 
@@ -59,7 +59,11 @@ Obnoví soft-deleted kolo (smaže `deletedAt`). 404 pokud neexistuje nebo není 
 Trvalé odstranění kola – vyžaduje aby JWT payload obsahoval `role: "admin"`.
 
 ### POST /bikes/:id/image
-Multipart upload / výměna obrázku. Pole formuláře: `image`. Povoleny typy: png, jpg/jpeg, webp. Po úspěchu server uloží soubor na disk (`/uploads/bikes/...`) a do `imageUrl` uloží relativní cestu.
+Multipart upload / výměna obrázku. Field: `image` (png, jpg/jpeg, webp). Po úspěchu server uloží soubor do `BIKES_UPLOAD_DIR`, do `imageUrl` uloží relativní cestu `/uploads/bikes/<soubor>`. Při novém uploadu původní soubor (pokud byl uložen v uploads/bikes) je odstraněn. Statická cesta servírována s Cache-Control (7d) + ETag.
+
+### Admin endpointy
+`GET /admin/users` – seznam uživatelů (admin role)
+`POST /admin/users/:id/role` – změna role (user|admin)
 
 ## Skripty
 Název | Popis
@@ -67,9 +71,11 @@ Název | Popis
 `npm run purge:bikes` | Trvale smaže kola s `deletedAt <= nyní - BIKE_PURGE_DAYS` (default 30 dní).
 `npm run migrate:bikes:ownerEmailLower` | Normalizuje `ownerEmail` na lowercase u existujících dokumentů.
 
-## Migrační proměnné
+## Migrační / konfigurační proměnné
 - `MAX_BIKES_PER_USER` – limit kol.
 - `BIKE_PURGE_DAYS` – počet dní pro purge.
+- `CREATE_BIKE_RATE_MAX` – max create požadavků v 15min window.
+- `BIKES_UPLOAD_DIR` – cílový adresář pro obrázky (default `uploads/bikes`).
 
 ## Plánovaná vylepšení
 - Generování náhledů / optimalizace (sharp, webp konverze, různé velikosti).

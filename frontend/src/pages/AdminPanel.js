@@ -6,6 +6,8 @@ export default function AdminPanel() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [changing, setChanging] = useState(null);
+  const [filter, setFilter] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,9 +40,29 @@ export default function AdminPanel() {
 
   if (loading) return <div>Načítám…</div>;
 
+  const filtered = users.filter(u => {
+    const matchText = !filter || u.email.toLowerCase().includes(filter.toLowerCase());
+    const matchRole = !roleFilter || u.role === roleFilter;
+    return matchText && matchRole;
+  });
+
   return (
     <div>
       <h2>Admin - Uživatelé</h2>
+      <div style={{display:'flex', gap:12, margin:'12px 0 20px'}}>
+        <input
+          placeholder="Hledat email..."
+          value={filter}
+          onChange={e=>setFilter(e.target.value)}
+          style={{ padding:'6px 10px', flex:'1 1 200px' }}
+        />
+        <select value={roleFilter} onChange={e=>setRoleFilter(e.target.value)} style={{ padding:'6px 10px' }}>
+          <option value="">Všechny role</option>
+          <option value="user">user</option>
+            <option value="admin">admin</option>
+        </select>
+        <button type="button" onClick={()=>{setFilter('');setRoleFilter('');}}>Reset</button>
+      </div>
       <table style={{ borderCollapse:'collapse', width:'100%', maxWidth:800 }}>
         <thead>
           <tr>
@@ -51,7 +73,7 @@ export default function AdminPanel() {
           </tr>
         </thead>
         <tbody>
-          {users.map(u => (
+          {filtered.map(u => (
             <tr key={u._id}>
               <td>{u.email}</td>
               <td>{u.role}</td>
@@ -62,7 +84,7 @@ export default function AdminPanel() {
               </td>
             </tr>
           ))}
-          {users.length === 0 && <tr><td colSpan={4}>Žádní uživatelé</td></tr>}
+          {filtered.length === 0 && <tr><td colSpan={4}>Žádní uživatelé</td></tr>}
         </tbody>
       </table>
     </div>
