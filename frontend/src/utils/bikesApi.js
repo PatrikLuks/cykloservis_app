@@ -25,3 +25,25 @@ export async function deleteBike(id) {
 	const { data } = await api.delete(`/bikes/${id}`);
 	return data;
 }
+
+export async function listDeletedBikes() {
+	const { data } = await api.get('/bikes/deleted');
+	return data;
+}
+
+export async function restoreBike(id) {
+	const { data } = await api.post(`/bikes/${id}/restore`);
+	return data;
+}
+
+export async function hardDeleteBike(id) {
+	const { data } = await api.delete(`/bikes/${id}/hard`);
+	return data;
+}
+
+export async function uploadBikeImage(id, file) {
+	const form = new FormData();
+	form.append('image', file);
+	const { data } = await api.post(`/bikes/${id}/image`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+	return data;
+}

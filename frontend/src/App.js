@@ -7,18 +7,27 @@ import VerifyEmail from './pages/VerifyEmail';
 import Dashboard from './pages/Dashboard';
 import ForgotPassword from './pages/ForgotPassword';
 import MyBikes from './pages/MyBikes';
+import AddBike from './pages/AddBike';
+import BikeDetail from './pages/BikeDetail';
+import EditBike from './pages/EditBike';
+import AppLayout from './components/AppLayout';
 
 function App() {
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
         <Route path="/" element={<Navigate to="/register" />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<MultiStepRegister />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-  <Route path="/my-bikes" element={<MyBikes />} />
+        <Route element={<AppLayout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/my-bikes" element={<MyBikes />} />
+          <Route path="/add-bike" element={<AddBike />} />
+          <Route path="/bikes/:id" element={<BikeDetail />} />
+          <Route path="/bikes/:id/edit" element={<EditBike />} />
+        </Route>
       </Routes>
     </Router>
   );

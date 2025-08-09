@@ -17,22 +17,8 @@
   background: #f0f0f5;
 }
 /* Dashboard layout styles */
-.dashboard-root {
-  display: flex;
-  min-height: 100vh;
-  background: #f7f7fa;
-}
- .dashboard-sidemenu {
-  width: 20vw;
-  background: #174ea6;
-  border-radius: 0 32px 32px 0;
-  box-shadow: 2px 0 12px #0001;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 24px 0 0 0;
-  height: 100vh;
-}
+.dashboard-root { display:flex; min-height:100vh; background:#f7f7fa; }
+.dashboard-sidemenu { width:220px; background:#174ea6; border-radius:0 32px 32px 0; box-shadow:2px 0 12px #0001; display:flex; flex-direction:column; padding:24px 0 16px; }
 .dashboard-logo-container {
   margin-bottom: 40px;
   width: 100%;
@@ -58,32 +44,12 @@
    box-shadow: 0 4px 24px #0003;
    background: #e3eafc;
  }
-.dashboard-sidemenu-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  margin-top: 0;
-  height: 100%;
-  justify-content: space-between;
-}
-.dashboard-sidemenu-item {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  width: 100%;
-  height: 100%;
-  min-height: 96px;
-  border-radius: 16px;
-  background: none;
-  transition: background 0.2s;
-  font-size: 3rem;
-  color: #222;
-  text-decoration: none;
-  padding-left: 24px;
-}
-.dashboard-sidemenu-item:hover {
-  background: #f0f0f5;
-}
+.dashboard-sidemenu-nav { display:flex; flex-direction:column; gap:4px; padding:0 12px; overflow-y:auto; }
+.dashboard-sidemenu-item { display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:14px; text-decoration:none; background:rgba(255,255,255,0.06); color:#fff; font-weight:500; font-size:15px; line-height:1; transition:background .2s, transform .15s; }
+.dashboard-sidemenu-item .dashboard-sidemenu-icon { font-size:20px; }
+.dashboard-sidemenu-item.active, .dashboard-sidemenu-item:hover { background:#fff; color:#174ea6; }
+.dashboard-sidemenu-item.active .dashboard-sidemenu-icon { transform:scale(1.15); }
+.dashboard-sidemenu-label { white-space:nowrap; }
 .dashboard-main {
   flex: 1;
   display: flex;
@@ -93,7 +59,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px 40px 0 40px;
+  padding: 10px 40px 0 40px; /* zmenšeno z 24px pro menší horní odsazení */
+}
+
+.dashboard-profile-wrapper { display:flex; align-items:center; gap:8px; }
+
+@media (max-width: 900px) {
+  .dashboard-profile-wrapper { position:relative; }
+}
+
+@media (max-width: 700px) {
+  .dashboard-header { padding: 6px 20px 0 20px; }
 }
 .dashboard-topmenu {
   display: flex;

@@ -5,7 +5,9 @@
   "scripts": {
   "start": "node index.js",
   "test": "jest",
-  "seed:bikes": "node scripts/seedBikes.js"
+  "seed:bikes": "node scripts/seedBikes.js",
+  "purge:bikes": "node scripts/purgeDeletedBikes.js",
+  "migrate:bikes:ownerEmailLower": "node scripts/migrateOwnerEmailLower.js"
   },
   "keywords": [],
   "author": "",
@@ -20,7 +22,8 @@
     "express-validator": "^7.2.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.4",
-    "nodemailer": "^7.0.5"
+  "nodemailer": "^7.0.5",
+  "multer": "^1.4.5-lts.2"
   },
   "devDependencies": {
     "jest": "^30.0.5",

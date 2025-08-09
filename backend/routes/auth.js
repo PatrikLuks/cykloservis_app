@@ -210,7 +210,7 @@ router.post('/login',
     if (!user.password) return res.status(400).json({ message: 'Uživatel nemá nastavené heslo. Dokončete registraci.' });
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Nesprávné heslo' });
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  const token = jwt.sign({ id: user._id, role: user.role || 'user' }, process.env.JWT_SECRET, { expiresIn: '7d' });
     auditLog('login', email, { action: 'login' });
     res.json({ token, finallyRegistered: !!user.finallyRegistered });
   })

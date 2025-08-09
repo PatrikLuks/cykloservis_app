@@ -1,21 +1,14 @@
 import { fetchWeatherByCoords } from '../utils/weatherApi';
-import InfoCard from '../components/InfoCard';
+import StatCard from '../components/StatCard';
+import { useDashboardData } from '../hooks/useDashboardData';
 import WeatherCard from '../components/WeatherCard';
 import RegisterHero from '../img/Register-hero.png';
-// Návrh dashboardu pro klienta cykloservisu:
-// Viz obrázek: /Applications/cykloservis_app/ite.png
 import React, { useState, useEffect } from 'react';
-import { ReactComponent as Logo } from '../img/BIKESERVIS.svg';
+import AdminPanel from './AdminPanel';
+import { useSearchParams } from 'react-router-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import '../App.css';
 import './DashboardCustom.css';
-
-const sideMenuItems = [
-  { icon: '🚲', label: 'Moje kola', link: '/my-bikes' },
-  { icon: '🔩', label: 'Součástky', link: '/dashboard?tab=soucastky' },
-  { icon: '🤖', label: 'AI chat', link: '/dashboard?tab=ai-chat' },
-  { icon: '🎁', label: 'Věrnostní program', link: '/dashboard?tab=vernost' },
-];
 
 
 const Dashboard = () => {
@@ -40,6 +33,9 @@ const Dashboard = () => {
   const [weather, setWeather] = useState(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
   const [weatherError, setWeatherError] = useState('');
+  const { loading: dashLoading, stats } = useDashboardData();
+  const [searchParams] = useSearchParams();
+  const tab = searchParams.get('tab') || 'overview';
 
   useEffect(() => {
     if (!('geolocation' in navigator)) {
@@ -79,65 +75,100 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <>
-      <div className="dashboard-root">
-        {/* Levé vertikální menu */}
-        <aside className="dashboard-sidemenu">
-          <div className="dashboard-logo-container">
-            <Link to="/dashboard">
-              <Logo className="dashboard-logo" />
-            </Link>
-          </div>
-          <nav className="dashboard-sidemenu-nav">
-            {sideMenuItems.map((item, idx) => (
-              <Link key={idx} to={item.link} className="dashboard-sidemenu-item" title={item.label}>
-                <span className="dashboard-sidemenu-icon">{item.icon}</span>
-              </Link>
-            ))}
-          </nav>
-        </aside>
-
-        {/* Hlavní obsah s horizontálním menu */}
-        <main className="dashboard-main">
-          <header className="dashboard-header">
-            {/* Horizontální menu sekcí */}
-            <nav className="dashboard-topmenu" aria-label="Sekce dashboardu">
-              <Link to="/dashboard?tab=servisni-kniha" className="dashboard-topmenu-item">Servisní kniha</Link>
-              <Link to="/dashboard?tab=poradenstvi" className="dashboard-topmenu-item">Poradenství</Link>
-              <Link to="/dashboard?tab=prijmovy-formular" className="dashboard-topmenu-item">Příjmový formulář</Link>
-            </nav>
-            {/* Profil v pravém horním rohu */}
-            <div style={{ position: 'absolute', right: 32, top: 32, zIndex: 100 }}>
+    <div>
+      <header className="dashboard-header">
+        <nav className="dashboard-topmenu" aria-label="Sekce dashboardu" style={{ flex:1 }}>
+          <Link to="/dashboard?tab=servisni-kniha" className="dashboard-topmenu-item">Servisní kniha</Link>
+          <Link to="/dashboard?tab=poradenstvi" className="dashboard-topmenu-item">Poradenství</Link>
+          <Link to="/dashboard?tab=prijmovy-formular" className="dashboard-topmenu-item">Příjmový formulář</Link>
+        </nav>
+        <div className="dashboard-profile-wrapper">
+          <button
+            className="dashboard-profile-btn"
+            title="Profil"
+            onClick={() => setProfileOpen(v => !v)}
+            aria-haspopup="true"
+            aria-expanded={profileOpen}
+          >
+            <span role="img" aria-label="Profil">👤</span>
+          </button>
+          {profileOpen && (
+            <div className={"dashboard-profile-dropdown open"}>
+              <button type="button" className="dashboard-profile-dropdown-btn">Profil</button>
+              <button type="button" className="dashboard-profile-dropdown-btn">Nastavení</button>
+              <button type="button" className="dashboard-profile-dropdown-btn">Oznámení</button>
               <button
-                className="dashboard-profile-btn"
-                title="Profil"
-                onClick={() => setProfileOpen(v => !v)}
-                aria-haspopup="true"
-                aria-expanded={profileOpen}
+                type="button"
+                className="dashboard-profile-dropdown-btn"
+                onClick={() => { try { localStorage.removeItem('token'); } catch {}; navigate('/login'); }}
               >
-                <span role="img" aria-label="Profil">👤</span>
+                Odhlásit
               </button>
-              {profileOpen && (
-                <div className={"dashboard-profile-dropdown open"}>
-                  <button type="button" className="dashboard-profile-dropdown-btn">Profil</button>
-                  <button type="button" className="dashboard-profile-dropdown-btn">Nastavení</button>
-                  <button type="button" className="dashboard-profile-dropdown-btn">Oznámení</button>
-                  <button
-                    type="button"
-                    className="dashboard-profile-dropdown-btn"
-                    onClick={() => { try { localStorage.removeItem('token'); } catch {}; navigate('/login'); }}
-                  >
-                    Odhlásit
-                  </button>
-                </div>
-              )}
             </div>
-            {/* Bohatá karta počasí pod profilem */}
-            <div style={{ position: 'absolute', right: 32, top: 90, zIndex: 20, maxWidth: 340, minWidth: 260 }}>
-              {/* Animace v pravém horním rohu podle počasí */}
-              {weather && (
-                null
-              )}
+          )}
+        </div>
+      </header>
+      <section style={{ padding: '48px 40px' }}>
+        {tab === 'admin' ? (
+          <div style={{ background:'#fff', borderRadius:40, padding:'32px 40px', boxShadow:'0 8px 32px -8px rgba(16,24,40,0.12)' }}>
+            <AdminPanel />
+          </div>
+        ) : (
+        <div className="dashboard-responsive-grid" style={{ display:'grid', gridTemplateColumns:'360px 1fr 300px', gap:40, alignItems:'start' }}>
+          {/* Left Bike summary */}
+          <div style={{ background:'#fff', borderRadius:40, padding:'40px 40px 30px', boxShadow:'0 8px 32px -8px rgba(16,24,40,0.12)', display:'flex', flexDirection:'column', gap:26 }}>
+            <div>
+              <h2 style={{ fontSize:24, fontWeight:800, margin:'0 0 18px' }}>Moje Kola</h2>
+              <div style={{ fontSize:22, fontWeight:800 }}>Trek Horské kolo</div>
+              <div style={{ fontSize:18, fontWeight:500, marginTop:4 }}>Bike MX 7206P</div>
+            </div>
+            <div style={{ display:'flex', gap:50, fontSize:14 }}>
+              <div>
+                <div style={{ fontSize:13, color:'#475467', fontWeight:600, textTransform:'uppercase' }}>Celkem Km</div>
+                <div style={{ fontSize:20, fontWeight:800, marginTop:4 }}>157Km</div>
+              </div>
+              <div>
+                <div style={{ fontSize:13, color:'#475467', fontWeight:600, textTransform:'uppercase' }}>Stav</div>
+                <div style={{ fontSize:20, fontWeight:800, marginTop:4 }}>Perfektní</div>
+              </div>
+            </div>
+            <div style={{ width:'100%', display:'flex', justifyContent:'center', padding:'10px 0 0' }}>
+              <img src={RegisterHero} alt="Aktuální kolo" style={{ maxWidth:'100%', maxHeight:220, objectFit:'contain', filter:'drop-shadow(0 8px 28px rgba(0,0,0,.25))' }} />
+            </div>
+            <Link to="/my-bikes"><button style={buttonStyle}>Spravovat kola</button></Link>
+          </div>
+          {/* Middle stats & recent */}
+          <div style={{ display:'flex', flexDirection:'column', gap:38 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(260px,1fr))', gap:30 }}>
+              <StatCard loading={dashLoading} title="Věrnostní body" value={`${stats.loyaltyPoints} bodů`} icon={<span role="img" aria-label="pohár">🏆</span>} iconBg="#e5f0ff" />
+              <StatCard loading={dashLoading} title="Příští servis za" value={`${stats.nextServiceKm} km`} icon={<span role="img" aria-label="servis">⚙️</span>} iconBg="#e5f0ff" />
+              <StatCard loading={dashLoading} title="Dokončené servisy" value={String(stats.completedServices)} subtitle="Tento rok" icon={<span role="img" aria-label="nářadí">🛠️</span>} iconBg="#e5f0ff" />
+            </div>
+            <div style={{ background:'#fff', borderRadius:40, padding:'38px 46px 44px', boxShadow:'0 8px 32px -8px rgba(16,24,40,0.12)' }}>
+              <h2 style={{ margin:'0 0 26px', fontSize:30, fontWeight:800 }}>Nedávná aktivita</h2>
+              <ul style={{ listStyle:'none', padding:0, margin:0, display:'flex', flexDirection:'column', gap:22 }}>
+                <li style={{ display:'flex', gap:18 }}>
+                  <span style={{ color:'#12B76A', fontSize:26 }}>•</span>
+                  <div>
+                    <div style={{ fontWeight:700 }}>Dokončen servis</div>
+                    <div style={{ fontSize:14, color:'#475467', marginTop:2 }}>Trek Horské kolo — Velký servis + výměna brzd</div>
+                  </div>
+                  <div style={{ marginLeft:'auto', fontSize:13, color:'#475467' }}>Před 3 dny</div>
+                </li>
+                <li style={{ display:'flex', gap:18 }}>
+                  <span style={{ color:'#12B76A', fontSize:26 }}>•</span>
+                  <div>
+                    <div style={{ fontWeight:700 }}>Naplánován termín</div>
+                    <div style={{ fontSize:14, color:'#475467', marginTop:2 }}>Kontrola pohonu</div>
+                  </div>
+                  <div style={{ marginLeft:'auto', fontSize:13, color:'#475467' }}>Před týdnem</div>
+                </li>
+              </ul>
+            </div>
+          </div>
+          {/* Right side weather + messages */}
+          <div style={{ display:'flex', flexDirection:'column', gap:34 }}>
+            <div style={{ position:'relative' }}>
               <WeatherCard
                 weather={weather}
                 weatherLoading={weatherLoading}
@@ -147,43 +178,19 @@ const Dashboard = () => {
                 forecastError={forecastError}
               />
             </div>
-          </header>
-          <section className="dashboard-content">
-            <div style={{ position: 'relative', minHeight: 180 }}>
-              <div
-                className="moje-kola-card"
-                style={{
-                  position: 'absolute',
-                  left: '80px',
-                  top: '32px',
-                  transform: 'translateX(-40%)',
-                  zIndex: 30,
-                  overflow: 'hidden',
-                }}
-              >
-              <img src={RegisterHero} alt="Moje kolo" style={{ width: '80%', maxWidth: 220, borderRadius: 18, boxShadow: '0 2px 12px #0002', marginBottom: 16 }} />
-                <h2 style={{ fontWeight: 800, fontSize: 28, color: '#1976d2', margin: 0 }}>Moje kola</h2>
-                <div style={{ fontSize: 18, color: '#222', fontWeight: 500, marginBottom: 8 }}>2 aktivní kola</div>
-                <div style={{ width: '100%', background: '#f7faff', borderRadius: 14, padding: '16px 12px', boxShadow: '0 2px 8px #1976d210', marginBottom: 8 }}>
-                  <div style={{ fontWeight: 700, color: '#1976d2', fontSize: 17 }}>Poslední servis: 3. 8. 2025</div>
-                  <div style={{ fontSize: 15, color: '#444', marginTop: 4 }}>Další servis za 120 km</div>
-                </div>
-                <Link to="/my-bikes"><button style={buttonStyle}>Spravovat kola</button></Link>
-              </div>
-              <div style={{ marginLeft: 360 }}>
-                <h1>Vítejte v klientském centru Cykloservisu!</h1>
-                <p>Zde najdete správu svých kol, součástek, věrnostní program a další funkce.</p>
-                <div className="dashboard-infocards-grid">
-                  <InfoCard icon="🎁" title="Věrnostní body" value="1 250 bodů" background="#fff" />
-                  <InfoCard icon="🔧" title="Servis" value="Objednaný: 3. 8. 2025" background="#f7faff" />
-                  <InfoCard icon="📢" title="Oznámení" value="Nová zpráva od technika" background="#f7faff" />
-                </div>
+            <div style={{ background:'#fff', borderRadius:40, padding:'34px 36px 38px', boxShadow:'0 8px 32px -8px rgba(16,24,40,0.12)', minHeight:220 }}>
+              <h3 style={{ margin:'0 0 18px', fontSize:24, fontWeight:800 }}>Zprávy</h3>
+              <div style={{ display:'flex', alignItems:'center', gap:14, background:'#f2f4f7', padding:'14px 16px', borderRadius:22 }}>
+                <div style={{ width:42, height:42, borderRadius:'50%', background:'linear-gradient(135deg,#1976d2,#64b5f6)', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:18 }} aria-hidden="true">J</div>
+                <div style={{ fontWeight:600 }}>Jakub Tučák</div>
+                <div style={{ marginLeft:'auto', background:'#ff4d4f', color:'#fff', fontSize:12, fontWeight:600, padding:'4px 8px', borderRadius:12 }}>1</div>
               </div>
             </div>
-          </section>
-        </main>
-      </div>
-    </>
+          </div>
+  </div>
+  )}
+      </section>
+    </div>
   );
 }
 

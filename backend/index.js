@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 
 
 const rateLimit = require('express-rate-limit');
@@ -20,7 +21,9 @@ const sensitiveLimiter = rateLimit({
 });
 
 const app = express();
-app.use(express.json());
+// Zvýšení limitu velikosti JSON payloadu (kvůli Base64 obrázkům) – lze konfigurovat proměnnou MAX_JSON_BODY (např. '2mb')
+const jsonLimit = process.env.MAX_JSON_BODY || '2mb';
+app.use(express.json({ limit: jsonLimit }));
 app.use(cors({
   origin: true,
   credentials: true,
@@ -45,6 +48,10 @@ app.use('/bikes', require('./routes/bikes'));
 // Service requests routes
 app.use('/service-requests', require('./routes/serviceRequests'));
 
+// Statické servírování uploadů (jen obrázky kol)
+const path = require('path');
+app.use('/uploads/bikes', express.static(path.join(process.cwd(), 'uploads', 'bikes')));
+
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.log(err));
@@ -52,6 +59,9 @@ mongoose.connect(process.env.MONGO_URI)
 app.get('/', (req, res) => {
   res.send('Bikeapp backend running');
 });
+// Statické soubory uploadů (obrázky kol)
+const uploadsDir = process.env.BIKES_UPLOAD_DIR || path.join(process.cwd(), 'uploads');
+app.use('/uploads', express.static(uploadsDir));
 // Health endpoint pro monitoring a readiness
 app.get('/api/health/health', (req, res) => {
   res.status(200).json({ status: 'ok', uptime: process.uptime() });

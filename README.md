@@ -16,6 +16,9 @@
 
 ## Rychlý start: Spuštění celé aplikace ServisKol
 
+### Dokumentace Bikes API
+Detailní popis všech endpointů kol, limitů, soft delete, restore a skriptů naleznete v souboru `backend/README_BIKES_API.md`.
+
 ## Spuštění v Dockeru
 
 1. Otevřete terminál a přejděte do kořenové složky projektu:

@@ -9,8 +9,8 @@ async function authOptional(req, res, next) {
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
     if (!token) return next();
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).lean();
-    if (user) req.user = { id: String(user._id), email: user.email };
+  const user = await User.findById(decoded.id).lean();
+  if (user) req.user = { id: String(user._id), email: user.email, role: user.role || 'user' };
   } catch (e) {
     // ignore invalid tokens in optional flow
   } finally {
@@ -25,9 +25,9 @@ async function requireAuth(req, res, next) {
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
     if (!token) return res.status(401).json({ message: 'Unauthorized' });
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).lean();
-    if (!user) return res.status(401).json({ message: 'Unauthorized' });
-    req.user = { id: String(user._id), email: user.email };
+  const user = await User.findById(decoded.id).lean();
+  if (!user) return res.status(401).json({ message: 'Unauthorized' });
+  req.user = { id: String(user._id), email: user.email, role: user.role || 'user' };
     next();
   } catch (e) {
     return res.status(401).json({ message: 'Unauthorized' });
