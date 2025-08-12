@@ -5,6 +5,7 @@ const { body, validationResult, query } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { requireAuth } = require('../middleware/auth');
 
 
 // Helper pro generování 6-místného kódu
@@ -238,3 +239,20 @@ router.post('/verify-code',
   })
 );
 module.exports = router;
+
+// Current user profile endpoint
+router.get('/me', requireAuth, asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id).lean();
+  if (!user) return res.status(404).json({ message: 'Uživatel nenalezen' });
+  const firstName = user.firstName || '';
+  const lastName = user.lastName || '';
+  const fullName = `${firstName} ${lastName}`.trim();
+  res.json({
+    email: user.email,
+    firstName,
+    lastName,
+    fullName,
+    role: user.role || 'user',
+    finallyRegistered: !!user.finallyRegistered
+  });
+}));

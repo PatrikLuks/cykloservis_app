@@ -127,3 +127,16 @@
 {"timestamp":"2025-08-09T08:27:05.969Z","action":"login","userEmail":"e2e_1754728021889@example.com","details":{"action":"login"}}
 {"timestamp":"2025-08-09T08:30:35.863Z","action":"login","userEmail":"pluks120@gmail.com","details":{"action":"login"}}
 {"timestamp":"2025-08-09T09:22:42.505Z","action":"login","userEmail":"pluks120@gmail.com","details":{"action":"login"}}
+{"timestamp":"2025-08-11T15:16:05.278Z","action":"register","userEmail":"adam.kroupa2006@email.cz","details":{"action":"register"}}
+{"timestamp":"2025-08-11T15:16:11.487Z","action":"update_password","userEmail":"adam.kroupa2006@email.cz","details":{"action":"save-password"}}
+{"timestamp":"2025-08-11T15:16:59.899Z","action":"login","userEmail":"adam.kroupa2006@email.cz","details":{"action":"login"}}
+{"timestamp":"2025-08-12T08:19:33.539Z","action":"login","userEmail":"adam.kroupa2006@email.cz","details":{"action":"login"}}
+{"timestamp":"2025-08-12T08:20:42.915Z","action":"login","userEmail":"adam.kroupa2006@email.cz","details":{"action":"login"}}
+{"timestamp":"2025-08-12T08:35:26.135Z","action":"login","userEmail":"adam.kroupa2006@email.cz","details":{"action":"login"}}
+{"timestamp":"2025-08-12T10:51:35.809Z","action":"login","userEmail":"adam.kroupa2006@email.cz","details":{"action":"login"}}
+{"timestamp":"2025-08-12T10:58:23.919Z","action":"register","userEmail":"adam.kroupa2006@email.cz","details":{"action":"register"}}
+{"timestamp":"2025-08-12T10:59:16.276Z","action":"update_password","userEmail":"adam.kroupa2006@email.cz","details":{"action":"save-password"}}
+{"timestamp":"2025-08-12T10:59:19.813Z","action":"register","userEmail":"adam.kroupa2006@email.cz","details":{"action":"register"}}
+{"timestamp":"2025-08-12T10:59:57.646Z","action":"login","userEmail":"adam.kroupa2006@email.cz","details":{"action":"login"}}
+{"timestamp":"2025-08-12T11:00:25.991Z","action":"login","userEmail":"adam.kroupa2006@email.cz","details":{"action":"login"}}
+{"timestamp":"2025-08-12T11:59:53.683Z","action":"login","userEmail":"adam.kroupa2006@email.cz","details":{"action":"login"}}

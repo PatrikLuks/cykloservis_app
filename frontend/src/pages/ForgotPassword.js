@@ -183,8 +183,8 @@ export default function ForgotPassword() {
                   onClick={() => { if (resendCooldown === 0 && !loadingResend) handleResendCode(); }}
                   onKeyDown={e => { if (e.key === 'Enter' && resendCooldown === 0 && !loadingResend) handleResendCode(); }}
                   aria-disabled={resendCooldown > 0 || loadingResend}
-                  style={{
-                    color: resendCooldown > 0 || loadingResend ? '#aaa' : '#1976d2',
+                    style={{
+                    color: resendCooldown > 0 || loadingResend ? '#aaa' : '#394ff7',
                     cursor: resendCooldown > 0 || loadingResend ? 'not-allowed' : 'pointer',
                     marginTop: 12,
                     display: 'inline-block',

@@ -49,7 +49,6 @@ app.use('/bikes', require('./routes/bikes'));
 app.use('/service-requests', require('./routes/serviceRequests'));
 
 // Statické servírování uploadů (jen obrázky kol)
-const path = require('path');
 app.use('/uploads/bikes', express.static(path.join(process.cwd(), 'uploads', 'bikes'), {
   etag: true,
   lastModified: true,

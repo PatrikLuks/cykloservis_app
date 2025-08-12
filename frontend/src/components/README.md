@@ -6,7 +6,7 @@ Komponenta `InfoCard` slouží k zobrazení informací na dashboardu v moderním
 - `icon` – ikona (emoji nebo SVG)
 - `title` – nadpis karty
 - `value` – hlavní údaj
-- `color` – barva ikony a nadpisu (výchozí: #1976d2)
+- `color` – barva ikony a nadpisu (výchozí: #394ff7)
 - `background` – barva pozadí karty (výchozí: #fff)
 
 ## Styl

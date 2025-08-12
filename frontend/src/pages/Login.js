@@ -136,7 +136,7 @@ export default function Login() {
                   <InputErrorMessage>{message}</InputErrorMessage>
                 )}
               </div>
-              <Link to="/forgot-password" className="register-login-link" style={{ alignSelf: 'start', marginBottom: 8 }}>
+              <Link to="/forgot-password" className="forgot-password-link hover-underline-animation left" style={{ alignSelf: 'start', marginBottom: 8 }}>
                 Zapomněli jste heslo?
               </Link>
               <button type="submit" disabled={loading} style={{ minHeight: 48, height: 48, fontWeight: 500 }}>
@@ -149,16 +149,19 @@ export default function Login() {
               <div className="register-or">
                 <span>Nebo se přihlaste pomocí</span>
                 <div className="register-social-row">
-                  <div className="register-social-btn">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/24px-Google_%22G%22_logo.svg.png?20230822192911" alt="Google-logo" />
-                  </div>
+                   <div className="register-social-btn google">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/24px-Google_%22G%22_logo.svg.png?20230822192911" alt="Google-logo" />
+                      </div>
+                       <div className="register-social-btn facebook">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/2023_Facebook_icon.svg" alt="Facebook-logo" />
+                      </div>
                 </div>
               </div>
             </form>
          
             <div className="already-registered-button" >
               <span className="have-an-account">Jste nový?</span>
-              <Link to="/register" className="register-login-link">Založte si účet</Link>
+              <Link to="/register" className="register-login-link hover-underline-animation left">Založte si účet</Link>
             </div>
                {message && !isPasswordError(message) && !isEmailError(message) && (
                  <div className="register-message">{message}</div>

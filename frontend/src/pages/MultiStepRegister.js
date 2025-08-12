@@ -218,8 +218,11 @@ export default function MultiStepRegister() {
                   <div className="register-or">
                     <span>Nebo se přihlaste pomocí</span>
                     <div className="register-social-row">
-                      <div className="register-social-btn">
+                      <div className="register-social-btn google">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/24px-Google_%22G%22_logo.svg.png?20230822192911" alt="Google-logo" />
+                      </div>
+                        <div className="register-social-btn facebook">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/2023_Facebook_icon.svg" alt="Facebook-logo" />
                       </div>
                     </div>
                   </div>
@@ -228,7 +231,7 @@ export default function MultiStepRegister() {
                   <div className="already-registered-button">
                     <div className="have-an-account"> Už máte účet?</div>
                 
-                    <a href="/login" className="register-login-link">Přihlásit se</a>
+                    <a href="/login" className="register-login-link hover-underline-animation left">Přihlásit se</a>
                   </div>
                   <div className="register-terms">
                     Souhlasím s vytvořením účtu pomocí e-mailové adresy podle{' '}
@@ -297,7 +300,7 @@ export default function MultiStepRegister() {
                     <button
                       type="submit"
                       disabled={!passwordValidations.every(v => v.valid) || loadingPassword}
-                      style={{ background: passwordValidations.every(v => v.valid) ? '#1976d2' : '#88accfff', color: '#fff', position: 'relative' }}
+                      style={{ background: passwordValidations.every(v => v.valid) ? '#394ff7' : '#88accfff', color: '#fff', position: 'relative' }}
                     >
                       {loadingPassword ? (
                         <Spinner />
