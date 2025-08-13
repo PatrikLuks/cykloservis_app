@@ -1,4 +1,5 @@
 #!/bin/sh
-. "./.husky/_/husky.sh"
-
-npx lint-staged
+npx lint-staged || exit 1
+echo "Running type-check (no emit)";
+npm run type-check --silent || exit 1
+echo "(Optional) backend tests changed-only TODO: implement find related later"

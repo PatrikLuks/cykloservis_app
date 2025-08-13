@@ -68,10 +68,14 @@ app.use(
   })
 );
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB connected'))
-  .catch((err) => console.log(err));
+if (!process.env.SKIP_DB) {
+  mongoose
+    .connect(process.env.MONGO_URI)
+    .then(() => console.log('MongoDB connected'))
+    .catch((err) => console.log(err));
+} else {
+  console.log('SKIP_DB=1 => přeskočeno připojení k MongoDB');
+}
 
 app.get('/', (req, res) => {
   res.send('Bikeapp backend running');

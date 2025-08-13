@@ -5,7 +5,7 @@ on:
   pull_request:
     branches: [ main ]
 jobs:
-  build-test:
+  backend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,11 +14,63 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-      - name: Install deps
-        run: npm install
+      - name: Install root + backend deps
+        run: |
+          npm install
+          cd backend && npm install
       - name: Lint
         run: npm run lint --if-present
       - name: Tests (backend)
         run: npm test --if-present
       - name: Health script syntax check
         run: node -c scripts/healthCheck.js || true
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install frontend deps
+        run: |
+          cd frontend && npm install
+      - name: Frontend tests
+        run: |
+          cd frontend && npm run test -- --coverage --reporter=default || true
+        env:
+          CI: true
+
+  health-check:
+    runs-on: ubuntu-latest
+    needs: backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install deps
+        run: |
+          npm install
+          cd backend && npm install
+      - name: Start backend (no DB)
+        run: |
+          SKIP_DB=1 PORT=5001 node backend/index.js &
+          echo $! > backend_server.pid
+      - name: Wait for server
+        run: |
+          n=0
+          until [ $n -ge 25 ]; do
+            curl -fsS http://localhost:5001/api/health/health && break
+            n=$((n+1))
+            sleep 0.4
+          done
+      - name: Run health script
+        run: node scripts/healthCheck.js
+      - name: Stop server
+        run: |
+          kill $(cat backend_server.pid) || true

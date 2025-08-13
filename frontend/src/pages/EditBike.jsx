@@ -26,7 +26,7 @@ export default function EditBike() {
           minutesRidden: data.minutesRidden || 0,
           type: data.type || '',
           brakes: data.brakes || '',
-          specs: data.specs || ''
+          specs: data.specs || '',
         });
       } catch (e) {
         setError('Kolo nenalezeno');
@@ -38,7 +38,10 @@ export default function EditBike() {
 
   function onChange(e) {
     const { name, value } = e.target;
-    setForm(f => ({ ...f, [name]: name === 'minutesRidden' ? parseInt(value||'0',10) : value }));
+    setForm((f) => ({
+      ...f,
+      [name]: name === 'minutesRidden' ? parseInt(value || '0', 10) : value,
+    }));
   }
 
   async function onSubmit(e) {
@@ -46,7 +49,7 @@ export default function EditBike() {
     setSaving(true);
     setError(null);
     try {
-      await updateBike(id, { ...form, year: form.year ? parseInt(form.year,10) : undefined });
+      await updateBike(id, { ...form, year: form.year ? parseInt(form.year, 10) : undefined });
       navigate(`/bikes/${id}`);
     } catch (err) {
       setError('Uložení selhalo');
@@ -56,36 +59,62 @@ export default function EditBike() {
   }
 
   if (loading) return <div className="page-pad">Načítám…</div>;
-  if (error) return <div className="page-pad">{error} <Link to="/my-bikes">Zpět</Link></div>;
+  if (error)
+    return (
+      <div className="page-pad">
+        {error} <Link to="/my-bikes">Zpět</Link>
+      </div>
+    );
 
   return (
     <div className="page-pad">
       <h1>Upravit kolo</h1>
-      <form onSubmit={onSubmit} style={{maxWidth:400, display:'grid', gap:12}}>
-        <label> Název
+      <form onSubmit={onSubmit} style={{ maxWidth: 400, display: 'grid', gap: 12 }}>
+        <label>
+          {' '}
+          Název
           <input name="title" value={form.title} onChange={onChange} required />
         </label>
-        <label> Model
+        <label>
+          {' '}
+          Model
           <input name="model" value={form.model} onChange={onChange} />
         </label>
-        <label> Rok
+        <label>
+          {' '}
+          Rok
           <input name="year" type="number" value={form.year} onChange={onChange} />
         </label>
-        <label> Minuty odjeto
-          <input name="minutesRidden" type="number" value={form.minutesRidden} onChange={onChange} />
+        <label>
+          {' '}
+          Minuty odjeto
+          <input
+            name="minutesRidden"
+            type="number"
+            value={form.minutesRidden}
+            onChange={onChange}
+          />
         </label>
-        <label> Typ
-          <input name="type" value={form.type||''} onChange={onChange} />
+        <label>
+          {' '}
+          Typ
+          <input name="type" value={form.type || ''} onChange={onChange} />
         </label>
-        <label> Brzdy
-          <input name="brakes" value={form.brakes||''} onChange={onChange} />
+        <label>
+          {' '}
+          Brzdy
+          <input name="brakes" value={form.brakes || ''} onChange={onChange} />
         </label>
-        <label> Specifikace
-          <textarea name="specs" value={form.specs||''} onChange={onChange} rows={4} />
+        <label>
+          {' '}
+          Specifikace
+          <textarea name="specs" value={form.specs || ''} onChange={onChange} rows={4} />
         </label>
-        {error && <div style={{color:'red'}}>{error}</div>}
-        <div style={{display:'flex', gap:12}}>
-          <button type="submit" disabled={saving}>{saving ? 'Ukládám…' : 'Uložit'}</button>
+        {error && <div style={{ color: 'red' }}>{error}</div>}
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button type="submit" disabled={saving}>
+            {saving ? 'Ukládám…' : 'Uložit'}
+          </button>
           <Link to={`/bikes/${id}`}>Zrušit</Link>
         </div>
       </form>

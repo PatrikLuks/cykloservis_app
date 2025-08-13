@@ -13,7 +13,7 @@ export default function Login() {
     const params = new URLSearchParams(window.location.search);
     const email = params.get('email');
     if (email) {
-      setForm(f => ({ ...f, email }));
+      setForm((f) => ({ ...f, email }));
     }
   }, []);
   const [showPassword, setShowPassword] = useState(false);
@@ -22,14 +22,14 @@ export default function Login() {
   const navigate = useNavigate();
 
   // Helper functions for robust error matching
-  const isEmailError = msg => msg && (
-    msg.toLowerCase().includes('neexistuje') ||
-    msg === 'Zadejte platnou e-mailovou adresu' ||
-    msg.toLowerCase().includes('není ověřen')
-  );
-  const isPasswordError = msg => msg && msg.toLowerCase().includes('heslo');
+  const isEmailError = (msg) =>
+    msg &&
+    (msg.toLowerCase().includes('neexistuje') ||
+      msg === 'Zadejte platnou e-mailovou adresu' ||
+      msg.toLowerCase().includes('není ověřen'));
+  const isPasswordError = (msg) => msg && msg.toLowerCase().includes('heslo');
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     if (
       (e.target.name === 'password' && isPasswordError(message)) ||
@@ -40,7 +40,7 @@ export default function Login() {
   };
 
   // Simple email validation
-  const isValidEmail = email => {
+  const isValidEmail = (email) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
@@ -53,9 +53,13 @@ export default function Login() {
     setLoading(true);
     setMessage('');
     try {
-  const res = await api.post('/auth/login', { email: form.email, password: form.password });
+      const res = await api.post('/auth/login', { email: form.email, password: form.password });
       if (res.data?.token) {
-        try { localStorage.setItem('token', res.data.token); } catch {}
+        try {
+          localStorage.setItem('token', res.data.token);
+        } catch {
+          /* noop persist token */
+        }
       }
       if (res.data && res.data.finallyRegistered === false) {
         // Přesměruj na MultiStepRegister na krok 3 (dokončení profilu)
@@ -80,7 +84,9 @@ export default function Login() {
             <h2 className="register-title">Přihlášení</h2>
             <form className="register-form" onSubmit={handleSubmit}>
               <div className="register-field">
-                <label htmlFor="email" className="register-label">E-mail</label>
+                <label htmlFor="email" className="register-label">
+                  E-mail
+                </label>
                 <input
                   type="text"
                   id="email"
@@ -93,12 +99,12 @@ export default function Login() {
                   inputMode="email"
                   spellCheck={false}
                 />
-                {isEmailError(message) && (
-                  <InputErrorMessage>{message}</InputErrorMessage>
-                )}
+                {isEmailError(message) && <InputErrorMessage>{message}</InputErrorMessage>}
               </div>
               <div className="register-field">
-                <label htmlFor="password" className="register-label">Heslo</label>
+                <label htmlFor="password" className="register-label">
+                  Heslo
+                </label>
                 <div className="register-password-input-wrapper">
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -115,54 +121,91 @@ export default function Login() {
                     tabIndex={0}
                     role="button"
                     aria-label={showPassword ? 'Skrýt heslo' : 'Zobrazit heslo'}
-                    onClick={() => setShowPassword(v => !v)}
-                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setShowPassword(v => !v); }}
+                    onClick={() => setShowPassword((v) => !v)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') setShowPassword((v) => !v);
+                    }}
                   >
                     {showPassword ? (
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="12" cy="12" r="3.5" stroke="#222" strokeWidth="1.5"/>
-                        <path d="M2 12C3.73 7.61 7.86 4.5 12 4.5C16.14 4.5 20.27 7.61 22 12C20.27 16.39 16.14 19.5 12 19.5C7.86 19.5 3.73 16.39 2 12Z" stroke="#222" strokeWidth="1.5"/>
-                        <line x1="6" y1="6" x2="18" y2="18" stroke="#222" strokeWidth="2" strokeLinecap="round"/>
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <circle cx="12" cy="12" r="3.5" stroke="#222" strokeWidth="1.5" />
+                        <path
+                          d="M2 12C3.73 7.61 7.86 4.5 12 4.5C16.14 4.5 20.27 7.61 22 12C20.27 16.39 16.14 19.5 12 19.5C7.86 19.5 3.73 16.39 2 12Z"
+                          stroke="#222"
+                          strokeWidth="1.5"
+                        />
+                        <line
+                          x1="6"
+                          y1="6"
+                          x2="18"
+                          y2="18"
+                          stroke="#222"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                        />
                       </svg>
                     ) : (
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="12" cy="12" r="3.5" stroke="#222" strokeWidth="1.5"/>
-                        <path d="M2 12C3.73 7.61 7.86 4.5 12 4.5C16.14 4.5 20.27 7.61 22 12C20.27 16.39 16.14 19.5 12 19.5C7.86 19.5 3.73 16.39 2 12Z" stroke="#222" strokeWidth="1.5"/>
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <circle cx="12" cy="12" r="3.5" stroke="#222" strokeWidth="1.5" />
+                        <path
+                          d="M2 12C3.73 7.61 7.86 4.5 12 4.5C16.14 4.5 20.27 7.61 22 12C20.27 16.39 16.14 19.5 12 19.5C7.86 19.5 3.73 16.39 2 12Z"
+                          stroke="#222"
+                          strokeWidth="1.5"
+                        />
                       </svg>
                     )}
                   </span>
                 </div>
-                {isPasswordError(message) && (
-                  <InputErrorMessage>{message}</InputErrorMessage>
-                )}
+                {isPasswordError(message) && <InputErrorMessage>{message}</InputErrorMessage>}
               </div>
-              <Link to="/forgot-password" className="register-login-link" style={{ alignSelf: 'start', marginBottom: 8 }}>
+              <Link
+                to="/forgot-password"
+                className="register-login-link"
+                style={{ alignSelf: 'start', marginBottom: 8 }}
+              >
                 Zapomněli jste heslo?
               </Link>
-              <button type="submit" disabled={loading} style={{ minHeight: 48, height: 48, fontWeight: 500 }}>
-                {loading ? (
-                  <Spinner />
-                ) : (
-                  'Přihlásit se'
-                )}
+              <button
+                type="submit"
+                disabled={loading}
+                style={{ minHeight: 48, height: 48, fontWeight: 500 }}
+              >
+                {loading ? <Spinner /> : 'Přihlásit se'}
               </button>
               <div className="register-or">
                 <span>Nebo se přihlaste pomocí</span>
                 <div className="register-social-row">
                   <div className="register-social-btn">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/24px-Google_%22G%22_logo.svg.png?20230822192911" alt="Google-logo" />
+                    <img
+                      src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/24px-Google_%22G%22_logo.svg.png?20230822192911"
+                      alt="Google-logo"
+                    />
                   </div>
                 </div>
               </div>
             </form>
-         
-            <div className="already-registered-button" >
+
+            <div className="already-registered-button">
               <span className="have-an-account">Jste nový?</span>
-              <Link to="/register" className="register-login-link">Založte si účet</Link>
+              <Link to="/register" className="register-login-link">
+                Založte si účet
+              </Link>
             </div>
-               {message && !isPasswordError(message) && !isEmailError(message) && (
-                 <div className="register-message">{message}</div>
-               )}
+            {message && !isPasswordError(message) && !isEmailError(message) && (
+              <div className="register-message">{message}</div>
+            )}
           </div>
         </div>
       </div>

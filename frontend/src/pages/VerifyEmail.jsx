@@ -15,9 +15,12 @@ export default function VerifyEmail() {
         // decode JWT payload to get email
         const payload = JSON.parse(atob(token.split('.')[1]));
         email = payload.email;
-      } catch (e) {}
-      axios.get(`http://localhost:5001/auth/verify-email?token=${token}`)
-        .then(res => {
+      } catch (e) {
+        /* noop invalid token decoding */
+      }
+      axios
+        .get(`http://localhost:5001/auth/verify-email?token=${token}`)
+        .then((res) => {
           setMessage(res.data.message);
           if (res.data.message === 'Email verified. You can continue registration.') {
             setTimeout(() => {
@@ -25,7 +28,7 @@ export default function VerifyEmail() {
             }, 1500);
           }
         })
-        .catch(err => setMessage(err.response?.data?.message || 'Chyba při ověřování emailu'));
+        .catch((err) => setMessage(err.response?.data?.message || 'Chyba při ověřování emailu'));
     } else {
       setMessage('Chybí ověřovací token');
     }
