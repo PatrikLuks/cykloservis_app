@@ -1,0 +1,7 @@
+{
+  "watch": ["backend"],
+  "ext": "js,json",
+  "ignore": ["backend/uploads/*", "backend/out/*"],
+  "exec": "node backend/index.js",
+  "delay": "150ms"
+}

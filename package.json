@@ -3,14 +3,18 @@
   "private": true,
   "scripts": {
     "postinstall": "cd backend && npm install && cd ../frontend && npm install",
-    "dev": "concurrently -k -n backend,frontend -c green,cyan \"npm:dev:backend\" \"npm:dev:frontend\"",
+    "dev": "npm run dev:attached",
+    "dev:attached": "concurrently -k -n backend,frontend -c magenta,cyan \"cd backend && nodemon index.js\" \"cd frontend && npm start\"",
+    "dev:both": "npm run dev:attached",
     "dev:backend": "cd backend && node index.js",
+    "dev:backend:watch": "cd backend && nodemon index.js",
     "dev:frontend": "cd frontend && npm start",
-  "dev:backend:detached": "nohup sh -c 'cd backend && node index.js' > backend.out.log 2>&1 & echo $! > backend.pid && echo Backend PID $(cat backend.pid)",
-  "stop:backend": "test -f backend.pid && kill $(cat backend.pid) && rm backend.pid || echo 'No backend.pid'",
-  "dev:backend:detached:watch": "nohup sh -c 'cd backend && npx nodemon index.js' > backend.out.log 2>&1 & echo $! > backend.pid && echo Backend_watch_PID $(cat backend.pid)",
-  "dev:detached": "npm run dev:backend:detached && (cd frontend && npm start)",
-  "health": "node scripts/healthCheck.js"
+    "dev:backend:detached": "nohup sh -c 'cd backend && node index.js' > backend.out.log 2>&1 & echo $! > backend.pid && echo Backend PID $(cat backend.pid)",
+    "dev:backend:detached:watch": "nohup sh -c 'cd backend && npx nodemon index.js' > backend.out.log 2>&1 & echo $! > backend.pid && echo Backend_watch_PID $(cat backend.pid)",
+    "dev:detached": "npm run dev:backend:detached && (cd frontend && npm start)",
+    "stop:backend": "test -f backend.pid && kill $(cat backend.pid) && rm backend.pid || echo 'No backend.pid'",
+    "health": "node scripts/healthCheck.js",
+    "health:url": "node scripts/healthCheck.js http://localhost:5001/api/health/health"
   },
     "devDependencies": {
       "concurrently": "^9.0.1",
