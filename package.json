@@ -16,10 +16,20 @@
     "health": "node scripts/healthCheck.js",
     "health:url": "node scripts/healthCheck.js http://localhost:5001/api/health/health"
   },
-    "devDependencies": {
-      "concurrently": "^9.0.1",
-      "nodemon": "^3.1.4"
-    },
+  "lint-staged": {
+    "*.{js,jsx,json,md}": [
+      "prettier --write"
+    ]
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1",
+    "nodemon": "^3.1.4",
+    "eslint": "^9.9.0",
+    "eslint-plugin-react": "^7.37.5",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.5",
+    "prettier": "^3.6.2"
+  },
   "dependencies": {
     "dotenv": "^17.2.1",
     "npm-run-all": "^4.1.5",

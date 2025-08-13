@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node index.js",
-    "test": "jest",
+  "test": "jest",
+  "test:watch": "jest --watchAll",
     "seed:bikes": "node scripts/seedBikes.js",
     "purge:bikes": "node scripts/purgeDeletedBikes.js",
     "migrate:bikes:ownerEmailLower": "node scripts/migrateOwnerEmailLower.js"

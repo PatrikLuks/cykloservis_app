@@ -1,0 +1,18 @@
+{
+  "root": true,
+  "env": { "browser": true, "node": true, "es2023": true, "jest": true },
+  "extends": ["eslint:recommended", "plugin:react/recommended"],
+  "parserOptions": { "ecmaVersion": "latest", "sourceType": "module" },
+  "settings": { "react": { "version": "detect" } },
+  "rules": {
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "react/prop-types": "off"
+  },
+  "overrides": [
+    {
+      "files": ["frontend/src/**/*"],
+      "plugins": ["react"],
+      "rules": {}
+    }
+  ]
+}
