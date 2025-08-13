@@ -14,17 +14,26 @@
     "dev:detached": "npm run dev:backend:detached && (cd frontend && npm start)",
     "stop:backend": "test -f backend.pid && kill $(cat backend.pid) && rm backend.pid || echo 'No backend.pid'",
     "health": "node scripts/healthCheck.js",
-    "health:url": "node scripts/healthCheck.js http://localhost:5001/api/health/health"
+    "health:url": "node scripts/healthCheck.js http://localhost:5001/api/health/health",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "prepare": "husky",
+    "audit:frontend": "cd frontend && npm audit",
+    "audit:backend": "cd backend && npm audit"
   },
   "lint-staged": {
-    "*.{js,jsx,json,md}": [
+    "*.{js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
       "prettier --write"
     ]
   },
   "devDependencies": {
     "concurrently": "^9.0.1",
     "nodemon": "^3.1.4",
-    "eslint": "^9.9.0",
+    "eslint": "^8.57.1",
     "eslint-plugin-react": "^7.37.5",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.5",
