@@ -1,10 +1,9 @@
-
 require('dotenv').config();
 const express = require('express');
+const helmet = require('helmet');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
-
 
 const rateLimit = require('express-rate-limit');
 const limiter = rateLimit({
@@ -17,19 +16,27 @@ const limiter = rateLimit({
 const sensitiveLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20, // max 20 požadavků na citlivé endpointy
-  message: 'Příliš mnoho požadavků, zkuste to později.'
+  message: 'Příliš mnoho požadavků, zkuste to později.',
 });
 
 const app = express();
+app.set('trust proxy', 1); // pro rate limit za proxy
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 // Zvýšení limitu velikosti JSON payloadu (kvůli Base64 obrázkům) – lze konfigurovat proměnnou MAX_JSON_BODY (např. '2mb')
 const jsonLimit = process.env.MAX_JSON_BODY || '2mb';
 app.use(express.json({ limit: jsonLimit }));
-app.use(cors({
-  origin: true,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
 app.use(limiter);
 
 // Rate limit na citlivé endpointy
@@ -49,19 +56,22 @@ app.use('/bikes', require('./routes/bikes'));
 app.use('/service-requests', require('./routes/serviceRequests'));
 
 // Statické servírování uploadů (jen obrázky kol)
-const path = require('path');
-app.use('/uploads/bikes', express.static(path.join(process.cwd(), 'uploads', 'bikes'), {
-  etag: true,
-  lastModified: true,
-  maxAge: '7d',
-  setHeaders: (res) => {
-    res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
-  }
-}));
+app.use(
+  '/uploads/bikes',
+  express.static(path.join(process.cwd(), 'uploads', 'bikes'), {
+    etag: true,
+    lastModified: true,
+    maxAge: '7d',
+    setHeaders: (res) => {
+      res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+    },
+  })
+);
 
-mongoose.connect(process.env.MONGO_URI)
+mongoose
+  .connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
-  .catch(err => console.log(err));
+  .catch((err) => console.log(err));
 
 app.get('/', (req, res) => {
   res.send('Bikeapp backend running');
@@ -75,4 +85,22 @@ app.get('/api/health/health', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// Graceful shutdown
+function shutdown(signal) {
+  console.log(`\n${signal} received, shutting down...`);
+  server.close(() => {
+    console.log('HTTP server closed.');
+    mongoose.connection.close(false, () => {
+      console.log('Mongo connection closed. Bye.');
+      process.exit(0);
+    });
+  });
+  // Force exit if not closed within timeout
+  setTimeout(() => {
+    console.warn('Force exit after timeout');
+    process.exit(1);
+  }, 8000).unref();
+}
+['SIGINT', 'SIGTERM'].forEach((sig) => process.on(sig, () => shutdown(sig)));
