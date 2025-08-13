@@ -8,10 +8,13 @@
     "dev:frontend": "cd frontend && npm start",
   "dev:backend:detached": "nohup sh -c 'cd backend && node index.js' > backend.out.log 2>&1 & echo $! > backend.pid && echo Backend PID $(cat backend.pid)",
   "stop:backend": "test -f backend.pid && kill $(cat backend.pid) && rm backend.pid || echo 'No backend.pid'",
-    "dev:detached": "npm run dev:backend:detached && (cd frontend && npm start)"
+  "dev:backend:detached:watch": "nohup sh -c 'cd backend && npx nodemon index.js' > backend.out.log 2>&1 & echo $! > backend.pid && echo Backend_watch_PID $(cat backend.pid)",
+  "dev:detached": "npm run dev:backend:detached && (cd frontend && npm start)",
+  "health": "node scripts/healthCheck.js"
   },
     "devDependencies": {
-      "concurrently": "^9.0.1"
+      "concurrently": "^9.0.1",
+      "nodemon": "^3.1.4"
     },
   "dependencies": {
     "dotenv": "^17.2.1",
