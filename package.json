@@ -2,11 +2,14 @@
   "name": "cykloservis_app",
   "private": true,
   "scripts": {
-    "postinstall": "cd backend && npm install && cd ../frontend && npm install",
-    "dev": "npm-run-all -p dev:backend dev:frontend",
-  "dev:backend": "cd backend && npm run dev",
-    "dev:frontend": "cd frontend && npm start"
+      "postinstall": "cd backend && npm install && cd ../frontend && npm install",
+    "dev": "concurrently -k -n backend,frontend -c green,cyan \"npm:dev:backend\" \"npm:dev:frontend\"",
+    "dev:backend": "cd backend && node index.js",
+      "dev:frontend": "cd frontend && npm start"
   },
+    "devDependencies": {
+      "concurrently": "^9.0.1"
+    },
   "dependencies": {
     "dotenv": "^17.2.1",
     "npm-run-all": "^4.1.5",
