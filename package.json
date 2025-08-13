@@ -2,10 +2,13 @@
   "name": "cykloservis_app",
   "private": true,
   "scripts": {
-      "postinstall": "cd backend && npm install && cd ../frontend && npm install",
+    "postinstall": "cd backend && npm install && cd ../frontend && npm install",
     "dev": "concurrently -k -n backend,frontend -c green,cyan \"npm:dev:backend\" \"npm:dev:frontend\"",
     "dev:backend": "cd backend && node index.js",
-      "dev:frontend": "cd frontend && npm start"
+    "dev:frontend": "cd frontend && npm start",
+  "dev:backend:detached": "nohup sh -c 'cd backend && node index.js' > backend.out.log 2>&1 & echo $! > backend.pid && echo Backend PID $(cat backend.pid)",
+  "stop:backend": "test -f backend.pid && kill $(cat backend.pid) && rm backend.pid || echo 'No backend.pid'",
+    "dev:detached": "npm run dev:backend:detached && (cd frontend && npm start)"
   },
     "devDependencies": {
       "concurrently": "^9.0.1"
