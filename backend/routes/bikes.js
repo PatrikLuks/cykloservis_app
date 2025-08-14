@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult, param } = require('express-validator');
 const Bike = require('../models/Bike');
+const CODES = require('../utils/errorCodes');
 const auditLog = require('../utils/auditLog');
 const { requireAuth } = require('../middleware/auth');
 const rateLimit = require('express-rate-limit');
-const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
@@ -13,7 +13,11 @@ const path = require('path');
 function handleValidation(req, res) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    res.status(400).json({ errors: errors.array() });
+    res.status(400).json({
+      error: 'Validation error',
+      code: CODES.VALIDATION_ERROR,
+      details: { errors: errors.array() },
+    });
     return false;
   }
   return true;
@@ -22,7 +26,9 @@ function handleValidation(req, res) {
 // Konstanty & pomocné funkce
 const MAX_IMAGE_BASE64_LENGTH = 1_200_000; // znaky (~ <1.2MB)
 const MAX_IMAGE_DECODED_BYTES = 900_000; // ~0.9MB skutečných dekódovaných dat
-const MAX_BIKES_PER_USER = parseInt(process.env.MAX_BIKES_PER_USER || '100', 10);
+function getMaxBikesPerUser() {
+  return parseInt(process.env.MAX_BIKES_PER_USER || '100', 10);
+}
 const STRING_FIELDS = [
   'title',
   'type',
@@ -50,14 +56,18 @@ function sanitize(payload) {
 }
 
 // Rate limiter pro vytváření kol (parametrizovatelný ENV proměnnou)
+// V testovacím režimu jej vypneme (Jest by jinak hlásil open handles kvůli intervalům uvnitř rate-limiteru)
 const CREATE_BIKE_RATE_MAX = parseInt(process.env.CREATE_BIKE_RATE_MAX || '30', 10);
-const createBikeLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: CREATE_BIKE_RATE_MAX,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Příliš mnoho požadavků na vytvoření kola. Zkuste to později.' },
-});
+const isTest = !!process.env.JEST_WORKER_ID;
+const createBikeLimiter = isTest
+  ? (req, _res, next) => next()
+  : rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: CREATE_BIKE_RATE_MAX,
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: { error: 'Příliš mnoho požadavků na vytvoření kola. Zkuste to později.' },
+    });
 
 // Multer konfigurace pro upload obrázků (MVP: ukládáme na disk)
 const uploadDir = process.env.BIKES_UPLOAD_DIR || path.join(process.cwd(), 'uploads', 'bikes');
@@ -83,7 +93,7 @@ router.get('/', requireAuth, async (req, res) => {
     const items = await Bike.find(query).sort({ createdAt: -1 });
     res.json(items);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error', code: CODES.SERVER_ERROR });
   }
 });
 
@@ -94,7 +104,7 @@ router.get('/deleted', requireAuth, async (req, res) => {
     const items = await Bike.find(query).sort({ deletedAt: -1 });
     res.json(items);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error', code: CODES.SERVER_ERROR });
   }
 });
 
@@ -125,26 +135,34 @@ router.post(
     try {
       if (req.body.imageUrl) {
         if (req.body.imageUrl.length > MAX_IMAGE_BASE64_LENGTH) {
-          return res.status(413).json({ error: 'Obrázek je příliš velký (délka)' });
+          return res
+            .status(413)
+            .json({ error: 'Obrázek je příliš velký (délka)', code: CODES.PAYLOAD_TOO_LARGE });
         }
         const m = req.body.imageUrl.match(
           /^data:image\/(png|jpe?g|webp);base64,([A-Za-z0-9+/=]+)$/
         );
         if (!m) {
-          return res.status(400).json({ error: 'Neplatný formát obrázku.' });
+          return res
+            .status(400)
+            .json({ error: 'Neplatný formát obrázku.', code: CODES.VALIDATION_ERROR });
         }
         const b64Payload = m[2];
         const estimatedBytes =
           Math.floor((b64Payload.length * 3) / 4) -
           (b64Payload.endsWith('==') ? 2 : b64Payload.endsWith('=') ? 1 : 0);
         if (estimatedBytes > MAX_IMAGE_DECODED_BYTES) {
-          return res.status(413).json({ error: 'Obrázek je příliš velký (decoded)' });
+          return res
+            .status(413)
+            .json({ error: 'Obrázek je příliš velký (decoded)', code: CODES.PAYLOAD_TOO_LARGE });
         }
       }
       // Limit počtu kol až po validaci vstupu
       const count = await Bike.countDocuments({ ownerEmail: req.user.email.toLowerCase() });
-      if (count >= MAX_BIKES_PER_USER) {
-        return res.status(409).json({ error: 'Překročen maximální počet kol.' });
+      if (count >= getMaxBikesPerUser()) {
+        return res
+          .status(409)
+          .json({ error: 'Překročen maximální počet kol.', code: CODES.MAX_BIKES_REACHED });
       }
       const payload = sanitize(req.body);
       payload.ownerEmail = req.user.email.toLowerCase();
@@ -152,7 +170,7 @@ router.post(
       auditLog('bike_create', req.user.email, { bikeId: bike._id });
       res.status(201).json(bike);
     } catch (err) {
-      res.status(500).json({ error: 'Server error' });
+      res.status(500).json({ error: 'Server error', code: CODES.SERVER_ERROR });
     }
   }
 );
@@ -166,11 +184,11 @@ router.get('/:id', [param('id').isMongoId()], requireAuth, async (req, res) => {
       ownerEmail: req.user.email.toLowerCase(),
       deletedAt: { $exists: false },
     });
-    if (!doc) return res.status(404).json({ error: 'Not found' });
+    if (!doc) return res.status(404).json({ message: 'Not found' });
     auditLog('bike_read', req.user.email, { bikeId: doc._id });
     res.json(doc);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error', code: CODES.SERVER_ERROR });
   }
 });
 
@@ -201,20 +219,26 @@ router.put(
     try {
       if (req.body.imageUrl) {
         if (req.body.imageUrl.length > MAX_IMAGE_BASE64_LENGTH) {
-          return res.status(413).json({ error: 'Obrázek je příliš velký (délka)' });
+          return res
+            .status(413)
+            .json({ error: 'Obrázek je příliš velký (délka)', code: CODES.PAYLOAD_TOO_LARGE });
         }
         const m = req.body.imageUrl.match(
           /^data:image\/(png|jpe?g|webp);base64,([A-Za-z0-9+/=]+)$/
         );
         if (!m) {
-          return res.status(400).json({ error: 'Neplatný formát obrázku.' });
+          return res
+            .status(400)
+            .json({ error: 'Neplatný formát obrázku.', code: CODES.VALIDATION_ERROR });
         }
         const b64Payload = m[2];
         const estimatedBytes =
           Math.floor((b64Payload.length * 3) / 4) -
           (b64Payload.endsWith('==') ? 2 : b64Payload.endsWith('=') ? 1 : 0);
         if (estimatedBytes > MAX_IMAGE_DECODED_BYTES) {
-          return res.status(413).json({ error: 'Obrázek je příliš velký (decoded)' });
+          return res
+            .status(413)
+            .json({ error: 'Obrázek je příliš velký (decoded)', code: CODES.PAYLOAD_TOO_LARGE });
         }
       }
       const update = sanitize(req.body);
@@ -228,11 +252,11 @@ router.put(
         { $set: update },
         { new: true, runValidators: true }
       );
-      if (!doc) return res.status(404).json({ error: 'Not found' });
+      if (!doc) return res.status(404).json({ message: 'Not found' });
       auditLog('bike_update', req.user.email, { bikeId: doc._id });
       res.json(doc);
     } catch (err) {
-      res.status(500).json({ error: 'Server error' });
+      res.status(500).json({ error: 'Server error', code: CODES.SERVER_ERROR });
     }
   }
 );
@@ -253,7 +277,7 @@ router.delete('/:id', [param('id').isMongoId()], requireAuth, async (req, res) =
     if (doc) auditLog('bike_soft_delete', req.user.email, { bikeId: req.params.id });
     res.json({ ok: true, softDeleted: !!doc });
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error', code: CODES.SERVER_ERROR });
   }
 });
 
@@ -270,24 +294,25 @@ router.post('/:id/restore', [param('id').isMongoId()], requireAuth, async (req, 
       { $unset: { deletedAt: 1 } },
       { new: true }
     );
-    if (!doc) return res.status(404).json({ error: 'Not found or not deleted' });
+    if (!doc) return res.status(404).json({ message: 'Not found' });
     auditLog('bike_restore', req.user.email, { bikeId: doc._id });
     res.json(doc);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error', code: CODES.SERVER_ERROR });
   }
 });
 
 // DELETE /bikes/:id/hard - admin trvalé smazání
 router.delete('/:id/hard', [param('id').isMongoId()], requireAuth, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+    if (req.user.role !== 'admin')
+      return res.status(403).json({ error: 'Forbidden', code: CODES.FORBIDDEN });
     const doc = await Bike.findOneAndDelete({ _id: req.params.id });
-    if (!doc) return res.status(404).json({ error: 'Not found' });
+    if (!doc) return res.status(404).json({ message: 'Not found' });
     auditLog('bike_hard_delete', req.user.email, { bikeId: req.params.id });
     res.json({ ok: true, hardDeleted: true });
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error', code: CODES.SERVER_ERROR });
   }
 });
 
@@ -298,7 +323,12 @@ router.post(
   requireAuth,
   upload.single('image'),
   async (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'Chybí soubor image' });
+    if (!req.file)
+      return res.status(400).json({
+        error: 'Chybí soubor image',
+        code: CODES.VALIDATION_ERROR,
+        details: { field: 'image' },
+      });
     try {
       const ext =
         req.file.mimetype === 'image/png'
@@ -314,7 +344,7 @@ router.post(
         _id: req.params.id,
         ownerEmail: req.user.email.toLowerCase(),
       });
-      if (!current) return res.status(404).json({ error: 'Not found' });
+      if (!current) return res.status(404).json({ message: 'Not found' });
       const oldImage =
         current.imageUrl && current.imageUrl.startsWith('/uploads/bikes/')
           ? current.imageUrl
@@ -331,7 +361,7 @@ router.post(
       auditLog('bike_image_upload', req.user.email, { bikeId: req.params.id, filename });
       res.json(current);
     } catch (err) {
-      res.status(500).json({ error: 'Server error' });
+      res.status(500).json({ error: 'Server error', code: CODES.SERVER_ERROR });
     }
   }
 );

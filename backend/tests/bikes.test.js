@@ -1,21 +1,13 @@
 jest.setTimeout(20000);
-require('dotenv').config();
 const request = require('supertest');
-const express = require('express');
-const mongoose = require('mongoose');
-const bikesRouter = require('../routes/bikes');
-const authRouter = require('../routes/auth');
+const app = require('..');
 const User = require('../models/User');
-
-const app = express();
-app.use(express.json({ limit: '2mb' }));
-app.use('/auth', authRouter);
-app.use('/bikes', bikesRouter);
+const { ensureDb } = require('./helpers/testFactory');
 
 let token;
 
 beforeAll(async () => {
-  await mongoose.connect(process.env.MONGO_URI_TEST, {});
+  await ensureDb();
   const email = `bike_test_${Date.now()}@example.com`;
   // registrace (odešle kód) -> z DB vzít kód -> ověřit -> uložit heslo -> login
   await request(app).post('/auth/register').send({ email });
@@ -30,13 +22,12 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  if (mongoose.connection.readyState === 1) {
-    try { await mongoose.connection.db.admin().command({ dropDatabase: 1 }); } catch {}
-    await mongoose.disconnect();
-  }
+  /* global teardown handles disconnect */
 });
 
-function auth() { return { Authorization: `Bearer ${token}` }; }
+function auth() {
+  return { Authorization: `Bearer ${token}` };
+}
 
 describe('Bikes API', () => {
   let createdId;
@@ -48,9 +39,9 @@ describe('Bikes API', () => {
       .set(auth())
       .send({ title: 'Test Bike', model: 'Model X', year: 2024 });
     expect(res.statusCode).toBe(201);
-    expect(res.body).toHaveProperty('_id');
+    expect(res.body).toHaveProperty('id');
     expect(res.body).toHaveProperty('ownerEmail');
-    createdId = res.body._id;
+    createdId = res.body.id;
   });
 
   it('restore of not deleted bike returns 404', async () => {
@@ -68,7 +59,7 @@ describe('Bikes API', () => {
   it('gets detail', async () => {
     const res = await request(app).get(`/bikes/${createdId}`).set(auth());
     expect(res.statusCode).toBe(200);
-    expect(res.body._id).toBe(createdId);
+    expect(res.body.id).toBe(createdId);
   });
 
   it('updates bike', async () => {
@@ -101,7 +92,7 @@ describe('Bikes API', () => {
   it('restores bike', async () => {
     const restore = await request(app).post(`/bikes/${createdId}/restore`).set(auth());
     expect(restore.statusCode).toBe(200);
-    expect(restore.body).toHaveProperty('_id', createdId);
+    expect(restore.body).toHaveProperty('id', createdId);
     const list2 = await request(app).get('/bikes').set(auth());
     expect(list2.body.length).toBe(1);
   });
@@ -128,28 +119,29 @@ describe('Bikes API', () => {
     adminUser.role = 'admin';
     await adminUser.save();
     await request(app).post('/auth/save-password').send({ email: aEmail, password: 'Secret123' });
-    const loginRes = await request(app).post('/auth/login').send({ email: aEmail, password: 'Secret123' });
+    const loginRes = await request(app)
+      .post('/auth/login')
+      .send({ email: aEmail, password: 'Secret123' });
     adminToken = loginRes.body.token;
-    const resDel = await request(app).delete(`/bikes/${createdId}/hard`).set({ Authorization: `Bearer ${adminToken}` });
+    const resDel = await request(app)
+      .delete(`/bikes/${createdId}/hard`)
+      .set({ Authorization: `Bearer ${adminToken}` });
     // bike může být již soft restored, takže hard delete by měl nyní projít (pokud existuje)
-    expect([200,404]).toContain(resDel.statusCode);
+    expect([200, 404]).toContain(resDel.statusCode);
   });
 
   it('uploads image via multipart', async () => {
     // nejprve vytvořit nové kolo pro upload
-    const resCreate = await request(app)
-      .post('/bikes')
-      .set(auth())
-      .send({ title: 'Upload Test' });
+    const resCreate = await request(app).post('/bikes').set(auth()).send({ title: 'Upload Test' });
     expect(resCreate.statusCode).toBe(201);
-    const bid = resCreate.body._id;
+    const bid = resCreate.body.id;
     const resUp = await request(app)
       .post(`/bikes/${bid}/image`)
       .set(auth())
-      .attach('image', Buffer.from('89504E470D0A1A0A','hex'), 'tiny.png');
+      .attach('image', Buffer.from('89504E470D0A1A0A', 'hex'), 'tiny.png');
     // očekáváme 200 nebo případně 500 pokud FS selže (pak test failne) – primárně 200
     expect(resUp.statusCode).toBe(200);
-    expect(resUp.body).toHaveProperty('_id', bid);
+    expect(resUp.body).toHaveProperty('id', bid);
     expect(resUp.body).toHaveProperty('imageUrl');
   });
 });

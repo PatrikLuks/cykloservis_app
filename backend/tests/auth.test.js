@@ -1,29 +1,14 @@
 jest.setTimeout(20000);
-require('dotenv').config();
 const request = require('supertest');
-const express = require('express');
-const mongoose = require('mongoose');
+const app = require('..');
 const User = require('../models/User');
-const authRoutes = require('../routes/auth');
-
-const app = express();
-app.use(express.json());
-app.use('/auth', authRoutes);
+const { ensureDb } = require('./helpers/testFactory');
 
 beforeAll(async () => {
-  await mongoose.connect(process.env.MONGO_URI_TEST, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+  await ensureDb();
 });
-
 afterAll(async () => {
-  if (mongoose.connection.readyState === 1) {
-    try {
-      await mongoose.connection.db.admin().command({ dropDatabase: 1 });
-    } catch (e) {}
-    await mongoose.disconnect();
-  }
+  /* global teardown disconnect */
 });
 
 describe('Auth API', () => {
