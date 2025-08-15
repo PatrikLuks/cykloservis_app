@@ -17,11 +17,11 @@
     "gen:types": "npx openapi-typescript openapi.yaml --output ../frontend/src/generated/schema.d.ts",
     "seed:bikes": "node scripts/seedBikes.js",
     "purge:bikes": "node scripts/purgeDeletedBikes.js",
-    "migrate:bikes:ownerEmailLower": "node scripts/migrateOwnerEmailLower.js"
+    "migrate:bikes:ownerEmailLower": "node scripts/migrateOwnerEmailLower.js",
+    "diff:coverage": "node scripts/diffCoverage.js --threshold 80"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
   "description": "",
   "dependencies": {
     "bcryptjs": "^3.0.2",

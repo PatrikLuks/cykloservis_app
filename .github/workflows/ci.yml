@@ -99,6 +99,9 @@ jobs:
           if-no-files-found: error
       - name: Health script syntax check
         run: node -c scripts/healthCheck.js || true
+      - name: Diff coverage gate (backend)
+        run: |
+          node backend/scripts/diffCoverage.js --threshold 80 || (echo 'Diff coverage below threshold' && exit 1)
 
   frontend:
     runs-on: ubuntu-latest
