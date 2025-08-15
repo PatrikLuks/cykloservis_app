@@ -169,6 +169,8 @@ jobs:
           sleep 8
           curl -f http://localhost:5001/api/health/health
           curl -f http://localhost:8080/health || echo 'frontend health not configured'
+          # verify metrics endpoint returns 200 and contains cyklo_http_requests_total
+          curl -f http://localhost:5001/api/metrics | grep -q 'cyklo_http_requests_total' || (echo 'metrics missing'; exit 1)
       - name: Logs (backend)
         if: failure()
         run: docker logs serviskol-backend || true
@@ -177,3 +179,29 @@ jobs:
         run: docker logs serviskol-frontend || true
       - name: Compose down
         run: docker compose down -v
+
+  security-audit:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install backend deps
+        working-directory: backend
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+      - name: Install frontend deps
+        working-directory: frontend
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+      - name: Backend npm audit (prod)
+        working-directory: backend
+        run: npm audit --omit=dev || true
+      - name: Frontend npm audit (prod)
+        working-directory: frontend
+        run: npm audit --omit=dev || true
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
