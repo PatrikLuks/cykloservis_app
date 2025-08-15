@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# Husky v9: odstraněny boilerplate řádky dle deprecation warning.
+# Pokud commitlint není nainstalován (fresh clone před root install), fallback na npx install.
+if command -v npx >/dev/null 2>&1; then
+	npx --no-install commitlint --edit "$1" 2>/dev/null || npx commitlint --edit "$1"
+else
+	echo "npx not found; skipping commitlint" >&2
+fi

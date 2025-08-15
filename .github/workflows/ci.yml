@@ -240,3 +240,30 @@ jobs:
         run: npm audit --omit=dev || true
       - name: Dependency Review
         uses: actions/dependency-review-action@v4
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [full-tests, frontend, compose-smoke, e2e-playwright, security-audit]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      deployments: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install root dev deps
+        run: |
+          npm install --no-audit --no-fund
+          cd backend && npm install --no-audit --no-fund
+          cd ../frontend && npm install --no-audit --no-fund
+      - name: Semantic Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release

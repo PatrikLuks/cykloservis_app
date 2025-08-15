@@ -23,7 +23,8 @@
     "test:backend": "cd backend && npm test",
     "test:frontend": "cd frontend && npm run test",
     "test": "npm run test:backend && npm run test:frontend",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "release": "semantic-release"
   },
   "lint-staged": {
     "*.{js,jsx}": [
@@ -35,17 +36,25 @@
     ]
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.0",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^10.0.7",
+    "@semantic-release/release-notes-generator": "^14.0.1",
+    "@types/node": "^20.14.10",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
     "concurrently": "^9.0.1",
-    "nodemon": "^3.1.4",
     "eslint": "^8.57.1",
     "eslint-plugin-react": "^7.37.5",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.5",
+    "nodemon": "^3.1.4",
     "prettier": "^3.6.2",
-    "typescript": "^5.5.4",
-    "@types/node": "^20.14.10",
-    "@types/react": "^18.3.5",
-    "@types/react-dom": "^18.3.0"
+    "semantic-release": "^24.1.0",
+    "typescript": "^5.5.4"
   },
   "dependencies": {
     "dotenv": "^17.2.1",

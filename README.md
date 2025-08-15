@@ -1,4 +1,3 @@
-
 ## Monitoring, alerting a strategické checklisty
 
 - **Monitoring & Alerting**: Kompletní pokrytí backendu i frontendu (Prometheus, Sentry, Alertmanager, CI testy)
@@ -8,6 +7,7 @@
 - **Onboarding**: Aktuální onboarding a provozní dokumentace v `ONBOARDING_CHECKLIST.md`, `MONITORING_ALERTING_README.md`, `PERFORMANCE_ASSET_AUDIT_CHECKLIST.md`
 
 ### Rychlé odkazy
+
 - [Monitoring & Alerting README](MONITORING_ALERTING_README.md)
 - [Výkonnostní a asset audit checklist](PERFORMANCE_ASSET_AUDIT_CHECKLIST.md)
 - [Onboarding checklist](ONBOARDING_CHECKLIST.md)
@@ -17,6 +17,7 @@
 ## Rychlý start: Spuštění celé aplikace ServisKol
 
 ### Dokumentace Bikes API
+
 Detailní popis všech endpointů kol, limitů, soft delete, restore a skriptů naleznete v souboru `backend/README_BIKES_API.md`.
 
 ## Spuštění v Dockeru
@@ -26,9 +27,11 @@ Detailní popis všech endpointů kol, limitů, soft delete, restore a skriptů 
    cd /Users/patrikluks/Applications/serviskol
    ```
 2. Spusťte všechny služby najednou:
+
    ```sh
    docker-compose up --build
    ```
+
    - Frontend poběží na http://localhost:8080
    - Backend poběží na http://localhost:3001
    - MongoDB na portu 27017
@@ -64,9 +67,11 @@ node backend/scripts/seedTestData.js
    npm install
    ```
 3. Spusťte celý projekt jedním příkazem:
+
    ```sh
    npm run dev
    ```
+
    - Tím se automaticky spustí backend i frontend.
    - Frontend poběží na adrese, kterou vypíše terminál (obvykle http://localhost:5173).
    - Backend poběží na http://localhost:3001.
@@ -93,6 +98,10 @@ Pro samostatné spuštění backendu nebo frontendu:
 ---
 
 ## Testování a coverage
+
+### Coverage badge
+
+![Coverage](https://img.shields.io/badge/coverage-ci--generated-informational)
 
 - Spuštění všech backend testů:
   ```sh
@@ -124,7 +133,28 @@ Pro samostatné spuštění backendu nebo frontendu:
 - Pokud některá služba není dostupná, v CI se zobrazí logy kontejnerů pro snadné ladění.
 - Po dokončení testů se stack automaticky ukončí a uklidí.
 
+### Release automation (semantic-release)
+
+Repo používá automatizované verzování pomocí `semantic-release`.
+
+- Konvence commitů: Conventional Commits (lintováno přes commit-msg hook commitlint).
+- Branch strategie: `main` (stable), volitelné pre-release větve `next`, `beta`, `alpha`.
+- Typ verze se určí z commitů (`feat`=minor, `fix`=patch, `BREAKING CHANGE`=major).
+- Generuje se `CHANGELOG.md` a GitHub Release – verze se zapíše do `package.json` (root + balíčky).
+
+Příklady validních commit zpráv:
+
+```
+feat(auth): přidání dvoufaktorové autentizace
+fix(bikes): korekce limitu velikosti obrázku
+perf(metrics): optimalizace histogram buckets
+docs(readme): doplnění sekce o release procesu
+refactor(serviceRequests): zjednodušení validace
+chore(ci): úprava cache nastavení
+```
+
 ### Troubleshooting Docker v CI
+
 - Pokud CI selže na Docker stacku, zkontrolujte logy v příslušném jobu (sekce "Show backend logs", "Show frontend logs").
 - Nejčastější chyby: špatné proměnné prostředí, obsazené porty, chybějící závislosti v Dockerfile.
 - Pro lokální testování použijte stejné příkazy jako v CI:
@@ -172,6 +202,7 @@ Pro samostatné spuštění backendu nebo frontendu:
 ## Monitoring a alerting
 
 ### Sentry (chybové logy)
+
 - Backend podporuje napojení na Sentry – stačí nastavit proměnnou `SENTRY_DSN` v `.env` nebo v Dockeru.
 - Pokud je proměnná nastavena, všechny chyby a výjimky se automaticky odesílají do Sentry projektu.
 - Pro aktivaci:
@@ -184,6 +215,7 @@ Pro samostatné spuštění backendu nebo frontendu:
 - Pokud není DSN nastaveno, Sentry se nepoužívá a běh není ovlivněn.
 
 ### Prometheus (monitoring metrik)
+
 - Backend nabízí endpoint `/metrics` (Prometheus format, powered by prom-client).
 - Stačí přidat scrape config do Promethea, např.:
   ```yaml
@@ -240,6 +272,7 @@ Pro dotazy a zpětnou vazbu kontaktujte hlavního maintenera nebo využijte issu
 - Pro běh testů musí být spuštěn backend (`localhost:3001`) i frontend (`localhost:5173`).
 
 ### Spuštění e2e testů:
+
 ```sh
 cd frontend
 npm run test:e2e   # interaktivní režim
@@ -247,6 +280,7 @@ npx cypress run    # headless režim
 ```
 
 ### Troubleshooting
+
 - Pokud Cypress nenajde frontend, ujistěte se, že běží na správném portu (`5173`).
 - Pokud testy selžou, zkontrolujte síťové požadavky, konzoli a logy backendu.
 - Pro první spuštění může být nutné nainstalovat Cypress: `npx cypress install`
