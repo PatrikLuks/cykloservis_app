@@ -1,19 +1,37 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, request } from '@playwright/test';
 
-// Basic registration + profile flow smoke
-// Assumes backend available at localhost:5001 and frontend served at baseURL.
+// Plný registration + verify + set password + complete profile flow.
+// Dokud UI není kompletní, část kroků děláme přes direct API volání.
 
-test('registration flow smoke', async ({ page }) => {
+test('full registration flow (API assisted)', async () => {
+  const api = await request.newContext({ baseURL: 'http://localhost:5001' });
   const email = `e2e_${Date.now()}@example.com`;
-  await page.goto('/');
-  // Assume there is a registration form accessible; placeholder selectors
-  // Adjust selectors when frontend implements actual form ids.
-  // Example interactions guarded so test is non-fatal if UI not yet present.
-  if (await page.locator('form#register').isVisible().catch(() => false)) {
-    await page.fill('form#register input[name=email]', email);
-    await page.click('form#register button[type=submit]');
-    // Wait minimal network idle or feedback
-    await page.waitForTimeout(500);
+  // 1) Register
+  const registerRes = await api.post('/auth/register', { data: { email } });
+  expect(registerRes.ok()).toBeTruthy();
+  // 2) Získání kódu
+  const helper = await api.get(`/test-utils/user?email=${encodeURIComponent(email)}`);
+  if (helper.ok()) {
+    const { verificationCode } = await helper.json();
+    expect(verificationCode).toHaveLength(6);
+  const verify = await api.post('/auth/verify-code', { data: { email, code: verificationCode } });
+    expect(verify.ok()).toBeTruthy();
+  const pwd = await api.post('/auth/save-password', { data: { email, password: 'Abcdef1' } });
+    expect(pwd.ok()).toBeTruthy();
+  const profile = await api.post('/auth/complete-profile', {
+      data: {
+        email,
+        firstName: 'E2E',
+        lastName: 'Tester',
+        birthDate: '1990-01-01',
+        gender: 'other',
+        location: 'TestCity',
+      },
+    });
+    expect(profile.ok()).toBeTruthy();
+  } else {
+    // fallback smoke: endpoint nedostupný => alespoň registrace proběhla (403 or 404 depending on routing)
+    expect([403,404]).toContain(helper.status());
   }
-  expect(true).toBeTruthy(); // placeholder assertion
 });
+

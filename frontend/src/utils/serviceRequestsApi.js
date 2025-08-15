@@ -1,21 +1,19 @@
-import api from './apiClient';
+import {
+  apiListServiceRequests,
+  apiCreateServiceRequest,
+  apiUpdateServiceRequestStatus,
+  apiDeleteServiceRequest
+} from '../api/client';
 
 export async function listServiceRequests() {
-  const { data } = await api.get('/service-requests');
-  return data;
+  return apiListServiceRequests();
 }
-
 export async function createServiceRequest(payload) {
-  const { data } = await api.post('/service-requests', payload);
-  return data;
+  return apiCreateServiceRequest(payload);
 }
-
 export async function updateServiceRequestStatus(id, status) {
-  const { data } = await api.put(`/service-requests/${id}/status`, { status });
-  return data;
+  return apiUpdateServiceRequestStatus(id, status);
 }
-
 export async function deleteServiceRequest(id) {
-  const { data } = await api.delete(`/service-requests/${id}`);
-  return data;
+  return apiDeleteServiceRequest(id);
 }

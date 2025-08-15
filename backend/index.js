@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 Patrik Luks, Adam Kroupa
+ * All rights reserved. Proprietary and confidential.
+ * Use, distribution or modification without explicit permission of BOTH authors is strictly prohibited.
+ */
 require('dotenv').config();
 const express = require('express');
 const helmet = require('helmet');
@@ -10,19 +15,34 @@ const path = require('path');
 let limiter;
 let sensitiveLimiter;
 let rateLimit;
-const isTest = !!process.env.JEST_WORKER_ID;
-if (!isTest) {
+const isTestEnv = !!process.env.JEST_WORKER_ID;
+const enableRateLimit = (!isTestEnv && process.env.PLAYWRIGHT_E2E !== '1') || process.env.FORCE_RATE_LIMIT === '1';
+if (enableRateLimit) {
   rateLimit = require('express-rate-limit');
+  const { rateLimitRejectedTotal } = require('./metrics');
+  const onLimitReached = () => {
+    try {
+      rateLimitRejectedTotal.inc();
+    } catch (_) {}
+  };
   limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minut
     max: 100,
     standardHeaders: true,
     legacyHeaders: false,
+    handler: (req, res) => {
+      onLimitReached();
+      res.status(429).json({ error: 'Rate limit exceeded', code: 'RATE_LIMIT' });
+    },
   });
   sensitiveLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 20,
     message: 'Příliš mnoho požadavků, zkuste to později.',
+    handler: (req, res) => {
+      onLimitReached();
+      res.status(429).json({ error: 'Rate limit exceeded', code: 'RATE_LIMIT' });
+    },
   });
 }
 
@@ -39,6 +59,17 @@ app.set('trust proxy', 1); // pro rate limit za proxy
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:'],
+        connectSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'self'"],
+      },
+    },
   })
 );
 app.use(requestLogger);
@@ -72,6 +103,10 @@ app.use('/admin', require('./routes/admin'));
 app.use('/bikes', require('./routes/bikes'));
 // Service requests routes
 app.use('/service-requests', require('./routes/serviceRequests'));
+// Test utils (povoleno pouze pokud je nastavena proměnná ENABLE_TEST_UTILS=1)
+if (process.env.ENABLE_TEST_UTILS === '1') {
+  app.use('/test-utils', require('./routes/testUtils'));
+}
 
 // Statické servírování uploadů (jen obrázky kol)
 app.use(

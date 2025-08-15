@@ -34,8 +34,16 @@ export default defineConfig({
     setupFiles: './src/setupTests.js',
     esbuild: {
       loader: 'jsx',
-      jsx: 'automatic',
-      include: /src\/.*\.[jt]sx?$/,
+      jsx: 'automatic'
+    },
+    coverage: {
+      provider: 'v8',
+      reportsDirectory: './coverage',
+      reporter: ['text','lcov'],
+      lines: 60,
+      functions: 60,
+      statements: 60,
+      branches: 50,
     },
   },
 });

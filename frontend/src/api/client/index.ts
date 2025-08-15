@@ -7,9 +7,26 @@ export type ServiceRequest = import('../generated/schema.js').components['schema
 export type TokenResponse = import('../generated/schema.js').components['schemas']['TokenResponse'];
 export type MessageResponse = import('../generated/schema.js').components['schemas']['MessageResponse'];
 
-// Jednoduchý fallback: produkční build Vite nahradí process.env.VITE_API_BASE_URL pluginem, v pre-commit TypeScriptu použijeme lokální default.
+// Fallback: Vite poskytuje proměnné přes import.meta.env.* – pro build/případy bez podpory import.meta použijeme globalThis.__VITE_ENV.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const baseURL: string = (process.env && (process.env as any).VITE_API_BASE_URL) || 'http://localhost:5001';
+// Pokus o načtení env proměnné s minimálním rizikem chyb při CJS transformaci.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let baseCandidate: any;
+try {
+  // @ts-ignore – může, ale nemusí existovat
+  if (typeof import.meta !== 'undefined' && (import.meta as any).env) {
+    // @ts-ignore
+    baseCandidate = (import.meta as any).env.VITE_API_BASE_URL;
+  }
+// eslint-disable-next-line no-empty
+} catch {}
+// Fallback: možnost injektovat přes globalThis.__VITE_ENV (např. test harness)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const gAny = globalThis as any;
+if (!baseCandidate && gAny && gAny.__VITE_ENV) {
+  baseCandidate = gAny.__VITE_ENV.VITE_API_BASE_URL;
+}
+const baseURL: string = baseCandidate || 'http://localhost:5001';
 
 function createClient(): AxiosInstance {
   const inst = axios.create({ baseURL, headers: { 'Content-Type': 'application/json' } });

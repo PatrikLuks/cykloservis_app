@@ -1,3 +1,7 @@
+## Licence a vlastnictví
+
+Tento software a veškerý jeho zdrojový kód je 100% vlastnictvím Patrika Lukse a Adama Kroupy. Veškerá práva vyhrazena. Jakékoli použití, kopírování, šíření nebo úpravy jsou bez výslovného písemného souhlasu obou autorů zakázány. Podrobnosti viz soubor LICENSE.
+
 ## Monitoring, alerting a strategické checklisty
 
 - **Monitoring & Alerting**: Kompletní pokrytí backendu i frontendu (Prometheus, Sentry, Alertmanager, CI testy)
@@ -75,6 +79,11 @@ node backend/scripts/seedTestData.js
    - Tím se automaticky spustí backend i frontend.
    - Frontend poběží na adrese, kterou vypíše terminál (obvykle http://localhost:5173).
    - Backend poběží na http://localhost:3001.
+   - Frontend volá API na implicitní adrese `http://localhost:5001` (viz `frontend/.env.example`). Pro změnu:
+     1. Zkopírujte `frontend/.env.example` na `frontend/.env`.
+     2. Upravte hodnotu `VITE_API_BASE_URL`.
+     3. Restartujte frontend (vite načítá env při startu).
+
 
 ## 4. Chyby sledujte v terminálu
 
@@ -119,11 +128,37 @@ Pro samostatné spuštění backendu nebo frontendu:
   ```sh
   cd frontend && npm run test
   ```
-- Spuštění e2e testů (Cypress):
-  ```sh
-  cd frontend && npx cypress open
-  ```
 - Coverage reporty najdete v Codecov (viz badge výše).
+
+### Diff coverage gate & Git hooks
+
+Repo má nakonfigurované Git hooky přes Husky:
+
+| Hook | Funkce |
+|------|--------|
+| `pre-commit` | Spustí `lint-staged`, automatický prettier + ESLint fix a následně type-check. |
+| `commit-msg` | Ověření Conventional Commits pomocí `commitlint`. |
+| `pre-push` | Pokud existují změny v `backend/**/*.js`, spustí (podmíněně) backend testy s coverage a diff coverage gate (min. 80 % pokrytí změněných řádků). |
+
+Diff coverage znamená: procento řádků, které jste změnili (v porovnání s `origin/main`), jež jsou pokryté testy. Skript: `backend/scripts/diffCoverage.js`.
+
+Chování `pre-push` hooku:
+1. Zjistí změněné backend JS soubory vůči `origin/main` (fallback `HEAD~1`).
+2. Pokud žádné – hook se ukončí (rychlý push).
+3. Pokud jsou změny, zkontroluje, zda je třeba znovu generovat coverage (chybí `backend/coverage/lcov.info` nebo změněné testy).
+4. Spustí `npm run test:backend:coverage` (runInBand pro determinismus) jen pokud je potřeba.
+5. Spustí diff coverage gate s prahem 80 % (override: `DIFF_COV_THRESHOLD=75 git push`).
+
+Lokální ruční spuštění diff coverage (např. pro PR před push):
+```sh
+node backend/scripts/diffCoverage.js --threshold 80
+```
+
+Možné vylepšení do budoucna:
+- Přidat podporu pro TypeScript/TS soubory (pokud se zavedou) – mapování sourcemap.
+- Volitelný mód, který se napojí na `git merge-base` pro složitější rebasované větve.
+- Vystavení diff coverage výsledků jako badge z CI.
+
 
 ---
 
@@ -229,6 +264,21 @@ chore(ci): úprava cache nastavení
 - Metriky zahrnují request count, response time a další systémové statistiky.
 - Doporučeno pro produkční monitoring s Prometheus/Grafana.
 
+#### Vlastní metriky
+| Název | Typ | Popis |
+|-------|-----|-------|
+| `cyklo_http_request_duration_ms` | Histogram | Latence HTTP dle method/route/status |
+| `cyklo_http_requests_total` | Counter | Počty požadavků dle method/route/status |
+| `cyklo_http_requests_in_flight` | Gauge | Počet paralelně běžících požadavků |
+| `cyklo_http_request_errors_total` | Counter | Chybové odpovědi (4xx/5xx) dle status class |
+| `cyklo_http_status_class_total` | Counter | Odpovědi agregované na status class |
+| `cyklo_apdex_total` / satisfied / tolerating | Counter | Apdex komponenty (T konfig. proměnnou `APDEX_T_MS`) |
+| `cyklo_rate_limit_rejected_total` | Counter | Odmítnuté požadavky rate limiterem |
+| `cyklo_last_request_id_info` | Gauge | Debug: poslední `x-request-id` (nepoužívat pro alerty) |
+
+#### Korelační ID
+Každý požadavek dostane/propaguje `x-request-id` (UUID). Je vracen v odpovědi a objevuje se v aplikačních logách pro snadné dohledání toku. Gauge `cyklo_last_request_id_info` drží poslední ID jen pro rychlou manuální orientaci (není vhodné jej scrapeovat ve vysoké frekvenci ani na něj stavět alerting).
+
 ---
 
 ## Bezpečnost a údržba
@@ -267,22 +317,49 @@ Pro dotazy a zpětnou vazbu kontaktujte hlavního maintenera nebo využijte issu
 
 ---
 
-## E2E testy (Cypress)
+## E2E testy (Playwright)
 
-- Pro ověření funkčnosti loginu, registrace a dalších klíčových scénářů používejte Cypress e2e testy.
-- Testy najdete ve složce `frontend/cypress/e2e`.
-- Pro běh testů musí být spuštěn backend (`localhost:3001`) i frontend (`localhost:5173`).
+Používáme Playwright pro end-to-end scénáře (registrace, ověření kódu, dokončení profilu).
 
-### Spuštění e2e testů:
+Struktura testů: `frontend/tests/e2e`.
 
+Spuštění (lokálně):
 ```sh
 cd frontend
-npm run test:e2e   # interaktivní režim
-npx cypress run    # headless režim
+npm run test:e2e
 ```
 
-### Troubleshooting
+Rychlý end-to-end běh včetně startu stacku a povolených test-utils:
+```sh
+npm run e2e:local
+```
 
-- Pokud Cypress nenajde frontend, ujistěte se, že běží na správném portu (`5173`).
-- Pokud testy selžou, zkontrolujte síťové požadavky, konzoli a logy backendu.
-- Pro první spuštění může být nutné nainstalovat Cypress: `npx cypress install`
+Pro plný registrační flow je třeba povolit test-utils endpointy spuštěním backendu s proměnnou:
+```sh
+ENABLE_TEST_UTILS=1 npm run dev
+```
+
+V CI e2e jobu je proměnná nastavena automaticky přes docker-compose (`ENABLE_TEST_UTILS=1`).
+
+Playwright ukládá trace a video pro retry (viz `playwright.config.ts`).
+
+### Remote dev offloading
+
+Pro odlehčení lokálnímu stroji lze synchronizovat zdrojové kódy na vzdálený server pomocí `rsync` skriptů:
+
+Proměnné prostředí:
+- `REMOTE_DEV_HOST` (např. `user@server`)
+- `REMOTE_DEV_PATH` (např. `/home/user/cykloapp`)
+
+Příkazy:
+```sh
+npm run remote:sync:backend
+npm run remote:sync:frontend
+npm run remote:sync
+```
+
+Na vzdáleném serveru poprvé:
+```sh
+cd backend && npm install && cd ../frontend && npm install
+```
+Následně lze spustit docker-compose nebo jednotlivé služby. Pro průběžnou synchronizaci lze použít watch nástroj (např. `fswatch` + opakovaný rsync) dle potřeby.

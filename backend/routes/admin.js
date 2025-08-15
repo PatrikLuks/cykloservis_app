@@ -4,6 +4,7 @@ const User = require('../models/User');
 const { requireAuth } = require('../middleware/auth');
 const { body, param, validationResult } = require('express-validator');
 const auditLog = require('../utils/auditLog');
+const CODES = require('../utils/errorCodes');
 
 function requireAdmin(req, res, next) {
   if (!req.user || req.user.role !== 'admin') {
@@ -24,13 +25,16 @@ function handleValidation(req, res) {
 // GET /admin/users - list uživatelů (základní přehled)
 router.get('/users', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const users = await User.find({}, { email: 1, role: 1, isVerified: 1, createdAt: 1 })
+    const filter = {};
+    if (req.query.email) filter.email = req.query.email; // jednoduchý přesný filtr dle požadavku
+    const users = await User.find(filter, { email: 1, role: 1, isVerified: 1, createdAt: 1 })
       .sort({ createdAt: -1 })
       .lean();
-    auditLog('admin_list_users', req.user.email, { count: users.length });
+    auditLog('admin_list_users', req.user.email, { count: users.length, filtered: !!req.query.email });
     res.json(users);
   } catch (err) {
-    res.status(500).json({ error: 'Chyba serveru' });
+    // Standardizovaná 500 odpověď dle ErrorResponse schématu
+    res.status(500).json({ error: 'Chyba serveru', code: CODES.SERVER_ERROR });
   }
 });
 
@@ -55,7 +59,7 @@ router.post(
       auditLog('admin_change_role', req.user.email, { target: user.email, role: user.role });
       res.json({ email: user.email, role: user.role });
     } catch (err) {
-      res.status(500).json({ error: 'Chyba serveru' });
+      res.status(500).json({ error: 'Chyba serveru', code: CODES.SERVER_ERROR });
     }
   }
 );
@@ -67,7 +71,7 @@ router.delete('/users', requireAuth, requireAdmin, async (req, res) => {
     auditLog('admin_delete_all_users', req.user.email, { deleted: result.deletedCount });
     res.json({ message: 'Všichni uživatelé byli odstraněni.' });
   } catch (err) {
-    res.status(500).json({ error: 'Chyba serveru' });
+    res.status(500).json({ error: 'Chyba serveru', code: CODES.SERVER_ERROR });
   }
 });
 

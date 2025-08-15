@@ -1,7 +1,7 @@
 import { fetchWeatherByCoords } from '../utils/weatherApi';
-import StatCard from '../components/StatCard';
+import StatCard from '../components/StatCard.jsx';
 import { useDashboardData } from '../hooks/useDashboardData';
-import WeatherCard from '../components/WeatherCard';
+import WeatherCard from '../components/WeatherCard.jsx';
 import RegisterHero from '../img/Register-hero.png';
 import React, { useState, useEffect, useCallback } from 'react';
 import AdminPanel from './AdminPanel';

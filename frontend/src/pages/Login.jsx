@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 Patrik Luks, Adam Kroupa
+ * All rights reserved. Proprietary and confidential.
+ * Use, distribution or modification without explicit permission of BOTH authors is strictly prohibited.
+ */
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Spinner, InputErrorMessage } from '../components/CommonUI.jsx';

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult, param } = require('express-validator');
-const Bike = require('../models/Bike');
+const Bike = require('../models/Bike'); // ponecháno pro image upload specifika
 const CODES = require('../utils/errorCodes');
 const auditLog = require('../utils/auditLog');
 const { requireAuth } = require('../middleware/auth');
@@ -9,6 +9,18 @@ const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+// Service layer
+const {
+  createBikeForOwner,
+  updateBike: updateBikeService,
+  getBike: getBikeService,
+  listOwnerBikes,
+  listOwnerDeletedBikes,
+  softDelete: softDeleteService,
+  restore: restoreService,
+  hardDeleteBike,
+  ERROR_CODES: BIKE_SERVICE_ERRORS,
+} = require('../services/bikeService');
 
 function handleValidation(req, res) {
   const errors = validationResult(req);
@@ -26,9 +38,6 @@ function handleValidation(req, res) {
 // Konstanty & pomocné funkce
 const MAX_IMAGE_BASE64_LENGTH = 1_200_000; // znaky (~ <1.2MB)
 const MAX_IMAGE_DECODED_BYTES = 900_000; // ~0.9MB skutečných dekódovaných dat
-function getMaxBikesPerUser() {
-  return parseInt(process.env.MAX_BIKES_PER_USER || '100', 10);
-}
 const STRING_FIELDS = [
   'title',
   'type',
@@ -89,8 +98,7 @@ const upload = multer({
 // GET /bikes - list
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const query = { ownerEmail: req.user.email, deletedAt: { $exists: false } };
-    const items = await Bike.find(query).sort({ createdAt: -1 });
+    const items = await listOwnerBikes(req.user.email);
     res.json(items);
   } catch (err) {
     res.status(500).json({ error: 'Server error', code: CODES.SERVER_ERROR });
@@ -100,8 +108,7 @@ router.get('/', requireAuth, async (req, res) => {
 // GET /bikes/deleted - list soft-deleted
 router.get('/deleted', requireAuth, async (req, res) => {
   try {
-    const query = { ownerEmail: req.user.email, deletedAt: { $exists: true } };
-    const items = await Bike.find(query).sort({ deletedAt: -1 });
+    const items = await listOwnerDeletedBikes(req.user.email);
     res.json(items);
   } catch (err) {
     res.status(500).json({ error: 'Server error', code: CODES.SERVER_ERROR });
@@ -157,16 +164,16 @@ router.post(
             .json({ error: 'Obrázek je příliš velký (decoded)', code: CODES.PAYLOAD_TOO_LARGE });
         }
       }
-      // Limit počtu kol až po validaci vstupu
-      const count = await Bike.countDocuments({ ownerEmail: req.user.email.toLowerCase() });
-      if (count >= getMaxBikesPerUser()) {
+      const payload = sanitize(req.body); // service znovu sanitize provede ownerEmail
+      const { bike, error } = await createBikeForOwner(req.user.email, payload);
+      if (error === BIKE_SERVICE_ERRORS.MAX_BIKES_REACHED) {
         return res
           .status(409)
           .json({ error: 'Překročen maximální počet kol.', code: CODES.MAX_BIKES_REACHED });
       }
-      const payload = sanitize(req.body);
-      payload.ownerEmail = req.user.email.toLowerCase();
-      const bike = await Bike.create(payload);
+      if (!bike) {
+        return res.status(500).json({ error: 'Server error', code: CODES.SERVER_ERROR });
+      }
       auditLog('bike_create', req.user.email, { bikeId: bike._id });
       res.status(201).json(bike);
     } catch (err) {
@@ -179,11 +186,7 @@ router.post(
 router.get('/:id', [param('id').isMongoId()], requireAuth, async (req, res) => {
   if (!handleValidation(req, res)) return;
   try {
-    const doc = await Bike.findOne({
-      _id: req.params.id,
-      ownerEmail: req.user.email.toLowerCase(),
-      deletedAt: { $exists: false },
-    });
+    const doc = await getBikeService(req.user.email, req.params.id);
     if (!doc) return res.status(404).json({ message: 'Not found' });
     auditLog('bike_read', req.user.email, { bikeId: doc._id });
     res.json(doc);
@@ -241,20 +244,14 @@ router.put(
             .json({ error: 'Obrázek je příliš velký (decoded)', code: CODES.PAYLOAD_TOO_LARGE });
         }
       }
-      const update = sanitize(req.body);
-      delete update.ownerEmail; // nelze měnit vlastníka
-      const doc = await Bike.findOneAndUpdate(
-        {
-          _id: req.params.id,
-          ownerEmail: req.user.email.toLowerCase(),
-          deletedAt: { $exists: false },
-        },
-        { $set: update },
-        { new: true, runValidators: true }
+      const { bike, error } = await updateBikeService(
+        req.user.email,
+        req.params.id,
+        sanitize(req.body)
       );
-      if (!doc) return res.status(404).json({ message: 'Not found' });
-      auditLog('bike_update', req.user.email, { bikeId: doc._id });
-      res.json(doc);
+      if (error === BIKE_SERVICE_ERRORS.NOT_FOUND) return res.status(404).json({ message: 'Not found' });
+      auditLog('bike_update', req.user.email, { bikeId: bike._id });
+      res.json(bike);
     } catch (err) {
       res.status(500).json({ error: 'Server error', code: CODES.SERVER_ERROR });
     }
@@ -265,17 +262,10 @@ router.put(
 router.delete('/:id', [param('id').isMongoId()], requireAuth, async (req, res) => {
   if (!handleValidation(req, res)) return;
   try {
-    const doc = await Bike.findOneAndUpdate(
-      {
-        _id: req.params.id,
-        ownerEmail: req.user.email.toLowerCase(),
-        deletedAt: { $exists: false },
-      },
-      { $set: { deletedAt: new Date() } },
-      { new: true }
-    );
-    if (doc) auditLog('bike_soft_delete', req.user.email, { bikeId: req.params.id });
-    res.json({ ok: true, softDeleted: !!doc });
+    const { bike, error } = await softDeleteService(req.user.email, req.params.id);
+    if (!bike || error) return res.json({ ok: true, softDeleted: false });
+    auditLog('bike_soft_delete', req.user.email, { bikeId: req.params.id });
+    res.json({ ok: true, softDeleted: true });
   } catch (err) {
     res.status(500).json({ error: 'Server error', code: CODES.SERVER_ERROR });
   }
@@ -285,18 +275,10 @@ router.delete('/:id', [param('id').isMongoId()], requireAuth, async (req, res) =
 router.post('/:id/restore', [param('id').isMongoId()], requireAuth, async (req, res) => {
   if (!handleValidation(req, res)) return;
   try {
-    const doc = await Bike.findOneAndUpdate(
-      {
-        _id: req.params.id,
-        ownerEmail: req.user.email.toLowerCase(),
-        deletedAt: { $exists: true },
-      },
-      { $unset: { deletedAt: 1 } },
-      { new: true }
-    );
-    if (!doc) return res.status(404).json({ message: 'Not found' });
-    auditLog('bike_restore', req.user.email, { bikeId: doc._id });
-    res.json(doc);
+    const { bike, error } = await restoreService(req.user.email, req.params.id);
+    if (error === BIKE_SERVICE_ERRORS.NOT_FOUND) return res.status(404).json({ message: 'Not found' });
+    auditLog('bike_restore', req.user.email, { bikeId: bike._id });
+    res.json(bike);
   } catch (err) {
     res.status(500).json({ error: 'Server error', code: CODES.SERVER_ERROR });
   }
@@ -307,7 +289,7 @@ router.delete('/:id/hard', [param('id').isMongoId()], requireAuth, async (req, r
   try {
     if (req.user.role !== 'admin')
       return res.status(403).json({ error: 'Forbidden', code: CODES.FORBIDDEN });
-    const doc = await Bike.findOneAndDelete({ _id: req.params.id });
+    const doc = await hardDeleteBike(req.params.id);
     if (!doc) return res.status(404).json({ message: 'Not found' });
     auditLog('bike_hard_delete', req.user.email, { bikeId: req.params.id });
     res.json({ ok: true, hardDeleted: true });

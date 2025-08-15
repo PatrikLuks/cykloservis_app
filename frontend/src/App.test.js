@@ -1,10 +1,7 @@
-import React from 'react';
-import { render } from '@testing-library/react';
-import App from './App';
-
-describe('App root render', () => {
-  it('renders without crashing', () => {
-    const { container } = render(React.createElement(App));
-    expect(container.firstChild).toBeTruthy();
-  });
+// NOTE: Legacy placeholder test. Marked skipped to avoid duplicate noise.
+// Safe to remove once filesystem deletion works. Canonical root tests in AppRoot.test.jsx.
+describe.skip('App.test.js placeholder', () => {
+	it('noop', () => {
+		expect(true).toBe(true);
+	});
 });

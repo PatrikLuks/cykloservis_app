@@ -5,6 +5,8 @@ Komplexní popis endpointů pro správu kol v aplikaci.
 ## Model (Bike)
 Pole | Typ | Poznámka
 ---- | --- | -------
+`_id` | String | MongoDB ObjectId (primární identifikátor)
+`id` | String | Alias (může být klientsky odvozen z `_id`)
 `title` | String (req) | Název kola
 `type` | String | Typ (Horské, Silniční...)
 `manufacturer` | String | Výrobce
@@ -37,11 +39,18 @@ Všechny níže uvedené endpointy kromě administrátorského hard delete vyža
 ### GET /bikes
 Vrátí seznam nesmazaných (bez `deletedAt`) kol uživatele seřazený desc dle vytvoření.
 
+Chybové stavy:
+- 401 `{ message: "Unauthorized" }` pokud chybí/je neplatný token.
+
 ### GET /bikes/deleted
 Vrátí seznam soft-smazaných kol (ty, které mají `deletedAt`).
 
 ### POST /bikes
 Vytvoří kolo. Body (JSON) – minimálně `title`. Volitelná pole viz model. `imageUrl` validováno: délka + MIME pattern.
+
+Chybové stavy:
+- 400 validační chyby / špatný formát Base64
+- 401 neautorizovaný uživatel
 
 ### GET /bikes/:id
 Detail kola (pokud patří uživateli a není soft-deleted).
@@ -51,6 +60,8 @@ Update subsetu polí. Nelze měnit `ownerEmail`. Obrázek podléhá stejným lim
 
 ### DELETE /bikes/:id
 Soft delete – nastaví `deletedAt`. Opakované mazání vrátí `{ ok:true, softDeleted:false }` pokud už bylo.
+
+Chybové stavy: 401, 404.
 
 ### POST /bikes/:id/restore
 Obnoví soft-deleted kolo (smaže `deletedAt`). 404 pokud neexistuje nebo není smazané.

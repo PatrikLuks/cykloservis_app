@@ -1,0 +1,39 @@
+#!/bin/sh
+# Abort on errors
+set -e
+
+# Ensure backend deps present (monorepo initial clone safety)
+if [ ! -d "backend/node_modules" ]; then
+  echo "[pre-push] Installing backend dependencies (first run)";
+  (cd backend && npm install --no-audit --no-fund --silent)
+fi
+
+# Detect backend JS changes vs origin/main (fallback HEAD~1)
+BASE_REF=${GITHUB_BASE_REF:-origin/main}
+if ! git rev-parse --verify --quiet $BASE_REF >/dev/null; then
+  BASE_REF=HEAD~1
+fi
+
+CHANGED_BACKEND=$(git diff --name-only $BASE_REF...HEAD -- 'backend/**/*.js' 'backend/**/*.mjs' 'backend/**/*.cjs' | wc -l | tr -d ' ')
+
+if [ "$CHANGED_BACKEND" = "0" ]; then
+  echo "[pre-push] No backend JS changes detected (base $BASE_REF) – skipping backend tests & diff coverage gate.";
+  exit 0
+fi
+
+# Only re-run coverage if lcov missing or any test file changed
+LCOV_FILE=backend/coverage/lcov.info
+TEST_CHANGED=$(git diff --name-only $BASE_REF...HEAD -- 'backend/tests/**/*.js' | wc -l | tr -d ' ')
+if [ ! -f "$LCOV_FILE" ] || [ "$TEST_CHANGED" != "0" ]; then
+  echo "[pre-push] Running backend test coverage (because: lcov missing OR tests changed)";
+  npm run test:backend:coverage --silent
+else
+  echo "[pre-push] Reusing existing coverage (no test files changed)";
+fi
+
+# Diff coverage threshold (override via DIFF_COV_THRESHOLD env)
+THRESHOLD=${DIFF_COV_THRESHOLD:-80}
+echo "[pre-push] Checking diff coverage (threshold ${THRESHOLD}%)";
+node backend/scripts/diffCoverage.js --threshold $THRESHOLD
+
+echo "[pre-push] OK – all gates passed."

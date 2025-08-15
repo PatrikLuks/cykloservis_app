@@ -1,0 +1,891 @@
+openapi: 3.0.3
+info:
+  title: Cykloservis API
+  version: 0.1.0
+  description: Základní veřejné a autentizační endpointy.
+servers:
+  - url: http://localhost:5001
+paths:
+  /auth/register:
+    post:
+      summary: Zahájí registraci (pošle verifikační kód)
+      operationId: authRegister
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '201':
+          description: Kód odeslán
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Neplatný vstup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429': { description: Rate limit' }
+        '500':
+          description: Interní chyba serveru
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/save-password:
+    post:
+      summary: Uloží heslo uživatele v průběhu registrace
+      operationId: authSavePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 6 }
+      responses:
+        '200':
+          description: Heslo uloženo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Neplatný vstup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Interní chyba serveru
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/login:
+    post:
+      summary: Přihlášení uživatele
+      operationId: authLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: Token vydán
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Neplatný vstup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Neplatné přihlášení
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+        '500':
+          description: Interní chyba serveru
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/verify-code:
+    post:
+      summary: Ověří 6-místný registrační kód
+      operationId: authVerifyCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, code]
+              properties:
+                email: { type: string, format: email }
+                code: { type: string, minLength: 6, maxLength: 6 }
+      responses:
+        '200':
+          description: Email ověřen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Neplatný vstup / kód
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Interní chyba serveru
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/complete-profile:
+    post:
+      summary: Dokončí profil po ověření emailu
+      operationId: authCompleteProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, firstName, lastName, birthDate, gender, location]
+              properties:
+                email: { type: string, format: email }
+                firstName: { type: string }
+                lastName: { type: string }
+                birthDate: { type: string }
+                gender: { type: string }
+                location: { type: string }
+      responses:
+        '200':
+          description: Profil uložen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Neplatný vstup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Interní chyba serveru
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/forgot-password:
+    post:
+      summary: Pošle kód pro reset hesla
+      operationId: authForgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '200':
+          description: Kód odeslán
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Neplatný vstup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Interní chyba serveru
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/verify-reset-code:
+    post:
+      summary: Ověří reset kód
+      operationId: authVerifyResetCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, code]
+              properties:
+                email: { type: string, format: email }
+                code: { type: string, minLength: 6, maxLength: 6 }
+      responses:
+        '200':
+          description: Kód ověřen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Neplatný vstup / kód
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Interní chyba serveru
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/reset-password:
+    post:
+      summary: Nastaví nové heslo po ověření kódu
+      operationId: authResetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, code, newPassword]
+              properties:
+                email: { type: string, format: email }
+                code: { type: string, minLength: 6, maxLength: 6 }
+                newPassword: { type: string, minLength: 6 }
+      responses:
+        '200':
+          description: Heslo změněno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Neplatný vstup / kód
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Interní chyba serveru
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /bikes:
+    get:
+      summary: Výpis kol
+      operationId: bikesList
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Seznam kol
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bike'
+        '401':
+          description: Neautorizováno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: Vytvoření kola
+      operationId: bikesCreate
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BikeInput'
+      responses:
+        '201':
+          description: Kolo vytvořeno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bike'
+        '400':
+          description: Neplatný vstup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Neautorizováno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+        '409':
+          description: Limit kol dosažen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: Příliš velký obrázek
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /bikes/deleted:
+    get:
+      summary: Výpis soft smazaných kol
+      operationId: bikesListDeleted
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Seznam kol
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bike'
+        '401':
+          description: Neautorizováno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+  /bikes/{id}:
+    get:
+      summary: Detail kola
+      operationId: bikesGet
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bike'
+        '401':
+          description: Neautorizováno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Aktualizace kola
+      operationId: bikesUpdate
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BikeInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bike'
+        '400':
+          description: Neplatný vstup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Neautorizováno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '413':
+          description: Příliš velký obrázek
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Soft delete kola
+      operationId: bikesSoftDelete
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                required: [success]
+        '401':
+          description: Neautorizováno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /bikes/{id}/restore:
+    post:
+      summary: Obnovení soft smazaného kola
+      operationId: bikesRestore
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bike'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /bikes/{id}/hard:
+    delete:
+      summary: Trvalé smazání kola (admin)
+      operationId: bikesHardDelete
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      security:
+        - bearerAuth: []
+      responses:
+        '200': { description: OK }
+        '403': { description: Forbidden }
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /bikes/{id}/image:
+    post:
+      summary: Upload obrázku kola
+      operationId: bikesUploadImage
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image: { type: string, format: binary }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bike'
+        '400':
+          description: Chybný vstup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '413':
+          description: Soubor příliš velký
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /service-requests:
+    get:
+      summary: Výpis servisních požadavků
+      operationId: serviceRequestsList
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Seznam požadavků
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ServiceRequest'
+        '401':
+          description: Neautorizováno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: Vytvoření servisního požadavku
+      operationId: serviceRequestsCreate
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [bikeId, title]
+              properties:
+                bikeId: { type: string }
+                title: { type: string }
+                description: { type: string }
+                preferredDate: { type: string, format: date-time }
+                priceEstimate: { type: number, minimum: 0 }
+      responses:
+        '201':
+          description: Vytvořeno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+        '400':
+          description: Neplatný vstup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Neautorizováno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /service-requests/{id}/status:
+    put:
+      summary: Aktualizace statusu požadavku
+      operationId: serviceRequestsUpdateStatus
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [new, in_progress, done, cancelled] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+        '400':
+          description: Neplatný vstup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          description: Neautorizováno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /service-requests/{id}:
+    delete:
+      summary: Smazání servisního požadavku
+      operationId: serviceRequestsDelete
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                required: [ok]
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          description: Neautorizováno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/health/health:
+    get:
+      summary: Zdravotní kontrola
+      operationId: healthCheck
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  uptime: { type: number }
+                required: [status, uptime]
+  /api/health/ready:
+    get:
+      summary: Readiness včetně DB stavu
+      operationId: healthReady
+      responses:
+        '200': { description: Ready }
+        '503': { description: Not ready }
+  /api/openapi:
+    get:
+      summary: Vrátí aktuální OpenAPI YAML jako JSON (případně) nebo YAML
+      operationId: openapiGetSpec
+      responses:
+        '200':
+          description: Specifikace
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+components:
+  schemas:
+    Bike:
+      type: object
+      properties:
+        id: { type: string, description: 'ID z Mongo ObjectId (server transformuje _id -> id)' }
+        title: { type: string }
+        type: { type: string }
+        manufacturer: { type: string }
+        model: { type: string }
+        year: { type: integer, minimum: 1900, maximum: 2100 }
+        minutesRidden: { type: integer, minimum: 0 }
+        imageUrl: { type: string }
+        ownerEmail: { type: string, format: email }
+        driveBrand: { type: string }
+        driveType: { type: string }
+        color: { type: string }
+        brakes: { type: string }
+        suspension: { type: string }
+        suspensionType: { type: string }
+        specs: { type: string }
+        deletedAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, title, ownerEmail]
+    BikeInput:
+      type: object
+      properties:
+        title: { type: string }
+        type: { type: string }
+        manufacturer: { type: string }
+        model: { type: string }
+        year: { type: integer, minimum: 1900, maximum: 2100 }
+        minutesRidden: { type: integer, minimum: 0 }
+        imageUrl: { type: string }
+        driveBrand: { type: string }
+        driveType: { type: string }
+        color: { type: string }
+        brakes: { type: string }
+        suspension: { type: string }
+        suspensionType: { type: string }
+        specs: { type: string }
+      required: [title]
+    TokenResponse:
+      type: object
+      properties:
+        token: { type: string }
+        finallyRegistered: { type: boolean }
+        expiresIn: { type: integer, description: Sekundy do expirace }
+      required: [token]
+    MessageResponse:
+      type: object
+      properties:
+        message: { type: string }
+      required: [message]
+    ServiceRequest:
+      type: object
+      properties:
+        id: { type: string, description: 'ID z Mongo ObjectId (transformováno z _id)' }
+        ownerEmail: { type: string, format: email }
+        bikeId: { type: string }
+        title: { type: string }
+        description: { type: string }
+        status: { type: string, enum: [new, in_progress, done, cancelled] }
+        preferredDate: { type: string, format: date-time }
+        priceEstimate: { type: number }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, ownerEmail, bikeId, title, status]
+    ErrorResponse:
+      type: object
+      properties:
+        error: { type: string }
+        code: { type: string }
+        details: { type: object, additionalProperties: true }
+      required: [error, code]
+    UnauthorizedResponse:
+      type: object
+      properties:
+        message: { type: string, example: Unauthorized }
+      required: [message]
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

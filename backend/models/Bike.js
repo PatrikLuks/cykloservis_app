@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 Patrik Luks, Adam Kroupa
+ * All rights reserved. Proprietary and confidential.
+ * Use, distribution or modification without explicit permission of BOTH authors is strictly prohibited.
+ */
 const mongoose = require('mongoose');
 
 const BikeSchema = new mongoose.Schema({
@@ -17,7 +22,13 @@ const BikeSchema = new mongoose.Schema({
   suspensionType: { type: String, trim: true }, // Typ Odpružení
   specs: { type: String, trim: true }, // Specifikace
   deletedAt: { type: Date } // soft delete
-}, { timestamps: true });
+}, { timestamps: true, toJSON: { virtuals: true, versionKey: false, transform: (_doc, ret) => {
+  if (ret._id) {
+    ret.id = String(ret._id);
+  }
+  delete ret._id; // klient bude používat id
+  return ret;
+} } });
 
 // Kompozitní index pro časté listování (uživatel + čas vytvoření)
 BikeSchema.index({ ownerEmail: 1, createdAt: -1 });

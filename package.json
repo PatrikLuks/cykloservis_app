@@ -21,10 +21,15 @@
     "audit:frontend": "cd frontend && npm audit",
     "audit:backend": "cd backend && npm audit",
     "test:backend": "cd backend && npm test",
+  "test:backend:coverage": "cd backend && npx jest --coverage --runInBand",
     "test:frontend": "cd frontend && npm run test",
-    "test": "npm run test:backend && npm run test:frontend",
-    "type-check": "tsc --noEmit",
-    "release": "semantic-release"
+  "test": "npm run test:backend && npm run test:frontend",
+  "type-check": "tsc --noEmit",
+  "release": "semantic-release",
+  "remote:sync:backend": "rsync -avz --exclude 'node_modules' --exclude 'coverage' backend $REMOTE_DEV_HOST:$REMOTE_DEV_PATH",
+  "remote:sync:frontend": "rsync -avz --exclude 'node_modules' --exclude 'dist' frontend $REMOTE_DEV_HOST:$REMOTE_DEV_PATH",
+  "remote:sync": "npm run remote:sync:backend && npm run remote:sync:frontend",
+  "e2e:local": "bash scripts/e2e-local.sh"
   },
   "lint-staged": {
     "*.{js,jsx}": [

@@ -108,4 +108,9 @@ async function createBike(token, title = 'Test Bike') {
   return res.body.id;
 }
 
-module.exports = { createUserAndLogin, createBike, stopMemory, ensureDb };
+async function elevateToAdmin(email) {
+  const User = require('../../models/User');
+  await User.updateOne({ email }, { $set: { role: 'admin' } });
+}
+
+module.exports = { createUserAndLogin, createBike, stopMemory, ensureDb, elevateToAdmin };

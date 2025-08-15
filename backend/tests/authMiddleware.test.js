@@ -49,12 +49,13 @@ describe('auth middleware', () => {
     });
 
     it('přidá uživatele při platném tokenu', async () => {
-      const u = await User.create({ email: 'u@e.cz', role: 'admin', isVerified: true });
+      const email = `u_${Date.now()}@e.cz`;
+      const u = await User.create({ email, role: 'admin', isVerified: true });
       const token = jwt.sign({ id: u._id }, process.env.JWT_SECRET);
       const req = { headers: { authorization: 'Bearer ' + token } };
       const res = makeRes();
       await authOptional(req, res, () => {});
-      expect(req.user).toEqual({ id: String(u._id), email: 'u@e.cz', role: 'admin' });
+      expect(req.user).toEqual({ id: String(u._id), email, role: 'admin' });
     });
   });
 
@@ -85,7 +86,8 @@ describe('auth middleware', () => {
     });
 
     it('pokračuje při platném tokenu a nalezeném uživateli', async () => {
-      const u = await User.create({ email: 'x@y.cz', role: 'user', isVerified: true });
+      const email = `x_${Date.now()}@y.cz`;
+      const u = await User.create({ email, role: 'user', isVerified: true });
       const token = jwt.sign({ id: u._id }, process.env.JWT_SECRET);
       const req = { headers: { authorization: 'Bearer ' + token } };
       const res = makeRes();
@@ -94,7 +96,7 @@ describe('auth middleware', () => {
         nextCalled = true;
       });
       expect(nextCalled).toBe(true);
-      expect(req.user).toEqual({ id: String(u._id), email: 'x@y.cz', role: 'user' });
+      expect(req.user).toEqual({ id: String(u._id), email, role: 'user' });
     });
   });
 });

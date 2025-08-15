@@ -190,6 +190,9 @@ jobs:
           curl -f http://localhost:8080/health || echo 'frontend health not configured'
           # verify metrics endpoint returns 200 and contains cyklo_http_requests_total
           curl -f http://localhost:5001/api/metrics | grep -q 'cyklo_http_requests_total' || (echo 'metrics missing'; exit 1)
+          # ověření nových metrik
+          curl -f http://localhost:5001/api/metrics | grep -q 'cyklo_apdex_total' || (echo 'apdex metric missing'; exit 1)
+          curl -f http://localhost:5001/api/metrics | grep -q 'cyklo_http_status_class_total' || (echo 'status class metric missing'; exit 1)
       - name: Logs (backend)
         if: failure()
         run: docker logs serviskol-backend || true
@@ -215,7 +218,7 @@ jobs:
           npx playwright install --with-deps
       - name: Start stack
         run: |
-          docker compose up -d --build
+          ENABLE_TEST_UTILS=1 docker compose up -d --build
           n=0
           until curl -fsS http://localhost:5001/api/health/health; do sleep 1; n=$((n+1)); [ $n -gt 40 ] && exit 1; done
           until curl -fsS http://localhost:8080/; do sleep 1; n=$((n+1)); [ $n -gt 60 ] && exit 1; done

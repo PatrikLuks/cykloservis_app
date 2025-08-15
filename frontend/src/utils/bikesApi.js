@@ -1,49 +1,40 @@
-import api from './apiClient';
+// Refaktor: přechod na typovaný klient. Zachováváme původní názvy funkcí.
+import {
+	apiListBikes,
+	apiCreateBike,
+	apiGetBike,
+	apiUpdateBike,
+	apiSoftDeleteBike,
+	apiListDeletedBikes,
+	apiRestoreBike,
+	apiHardDeleteBike,
+	apiUploadBikeImage
+} from '../api/client';
 
-// Základní skeleton pro budoucí CRUD kol
 export async function listBikes() {
-	const { data } = await api.get('/bikes');
-	return data;
+	return apiListBikes();
 }
-
 export async function createBike(payload) {
-	const { data } = await api.post('/bikes', payload);
-	return data;
+	return apiCreateBike(payload);
 }
-
 export async function getBike(id) {
-	const { data } = await api.get(`/bikes/${id}`);
-	return data;
+	return apiGetBike(id);
 }
-
 export async function updateBike(id, payload) {
-	const { data } = await api.put(`/bikes/${id}`, payload);
-	return data;
+	return apiUpdateBike(id, payload);
 }
-
 export async function deleteBike(id) {
-	const { data } = await api.delete(`/bikes/${id}`);
-	return data;
+	return apiSoftDeleteBike(id);
 }
-
 export async function listDeletedBikes() {
-	const { data } = await api.get('/bikes/deleted');
-	return data;
+	return apiListDeletedBikes();
 }
-
 export async function restoreBike(id) {
-	const { data } = await api.post(`/bikes/${id}/restore`);
-	return data;
+	return apiRestoreBike(id);
 }
-
 export async function hardDeleteBike(id) {
-	const { data } = await api.delete(`/bikes/${id}/hard`);
-	return data;
+	return apiHardDeleteBike(id);
 }
-
 export async function uploadBikeImage(id, file) {
-	const form = new FormData();
-	form.append('image', file);
-	const { data } = await api.post(`/bikes/${id}/image`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
-	return data;
+	return apiUploadBikeImage(id, file);
 }

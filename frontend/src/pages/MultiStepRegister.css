@@ -283,7 +283,7 @@ text-decoration: none;
   display: flex;
   align-items: center;
   font-weight: 500;
-  color:
+  color: #555;
 }
 body {
  
@@ -468,15 +468,8 @@ body {
   width: 100%;
  
 }
-
 h2 {
   font-size: 1.625rem;
-
-.register-label{
-
-  margin-bottom: 12px;
-
-}
   margin-bottom: 48px;
   margin-top: 0;
   font-weight: 600;
@@ -519,7 +512,7 @@ h2 {
   margin: 32px 0;
 }
 .register-or {
-  margin-top: 18px;
+ margin-bottom: 0px !important;
  
 }
 

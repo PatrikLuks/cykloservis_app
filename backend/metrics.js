@@ -26,11 +26,24 @@ const httpRequestsInFlight = new client.Gauge({
   labelNames: ['method', 'route'],
 });
 
+// Poslední zpracované request id (diagnostika) – NEPOUŽÍVAT pro alerty, pouze debug (single-value gauge)
+const lastRequestId = new client.Gauge({
+  name: 'cyklo_last_request_id_info',
+  help: 'Poslední zaznamenané x-request-id (string hash) – slouží jen pro orientaci',
+  labelNames: ['req_id'],
+});
+
 // Počet chybových odpovědí (4xx,5xx) – agregováno podle method+route+statusClass
 const httpRequestErrorsTotal = new client.Counter({
   name: 'cyklo_http_request_errors_total',
   help: 'Počet chybových HTTP odpovědí (4xx,5xx)',
   labelNames: ['method', 'route', 'status_class'],
+});
+
+// Rate-limit odmítnutí (globálně) – jednoduchý counter bez dalších labelů, aby se nezvyšovala kardinalita
+const rateLimitRejectedTotal = new client.Counter({
+  name: 'cyklo_rate_limit_rejected_total',
+  help: 'Počet odmítnutých požadavků rate limiterem',
 });
 
 // Apdex (Application Performance Index) – threshold T (ms): satisfied (<=T), tolerating (<=4T)
@@ -79,6 +92,15 @@ function metricsMiddleware(req, res, next) {
     apdexAll.inc();
     if (durMs <= APDEX_T) apdexSatisfied.inc();
     else if (durMs <= APDEX_T * 4) apdexTolerating.inc();
+    if (req.id) {
+      // gauge.set s labely => udržujeme pouze poslední hodnotu; prom-client gauge s různými label kombinuje – čistíme předem
+      try {
+        lastRequestId.reset();
+        lastRequestId.set({ req_id: req.id }, 1);
+      } catch (_) {
+        /* ignore */
+      }
+    }
   });
   next();
 }
@@ -103,4 +125,6 @@ module.exports = {
   apdexTolerating,
   apdexAll,
   APDEX_T,
+  lastRequestId,
+  rateLimitRejectedTotal,
 };

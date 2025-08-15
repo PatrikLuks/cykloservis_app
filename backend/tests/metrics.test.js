@@ -20,5 +20,7 @@ describe('metrics endpoint', () => {
     expect(res.text).toMatch(/cyklo_apdex_satisfied_total/);
     expect(res.text).toMatch(/cyklo_http_status_class_total/);
     expect(APDEX_T).toBeGreaterThan(0);
+  // optional diagnostic gauge for last request id
+  expect(res.text).toMatch(/cyklo_last_request_id_info/);
   });
 });
