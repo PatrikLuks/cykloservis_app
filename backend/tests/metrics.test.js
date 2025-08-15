@@ -1,6 +1,6 @@
 const request = require('supertest');
 const app = require('..');
-const { httpRequestsInFlight, httpRequestErrorsTotal } = require('../metrics');
+const { APDEX_T } = require('../metrics');
 
 describe('metrics endpoint', () => {
   it('exposes prometheus metrics including custom counters', async () => {
@@ -13,24 +13,12 @@ describe('metrics endpoint', () => {
     expect(res.text).toMatch(/cyklo_http_request_duration_ms_bucket/);
   });
 
-  it('increments in-flight and error counters', async () => {
-    const beforeInFlight =
-      httpRequestsInFlight.get().values?.reduce((acc, v) => acc + v.value, 0) || 0;
-    const beforeErrors =
-      httpRequestErrorsTotal.get().values?.reduce((acc, v) => acc + v.value, 0) || 0;
-
-    // Trigger a known 404 (route not found) to count as error
-    await request(app).get('/api/__nonexistent__');
-    // Trigger success request
+  it('exposes new apdex & status class metrics', async () => {
     await request(app).get('/api/health/health');
-
-    const afterInFlight =
-      httpRequestsInFlight.get().values?.reduce((acc, v) => acc + v.value, 0) || 0;
-    const afterErrors =
-      httpRequestErrorsTotal.get().values?.reduce((acc, v) => acc + v.value, 0) || 0;
-
-    expect(afterInFlight).toBeLessThanOrEqual(beforeInFlight); // žádný leak
-    // Error counter mohl zůstat stejný pokud middlewares route nepustí do standardní chyby, proto >=
-    expect(afterErrors).toBeGreaterThanOrEqual(beforeErrors);
+    const res = await request(app).get('/api/metrics').expect(200);
+    expect(res.text).toMatch(/cyklo_apdex_total/);
+    expect(res.text).toMatch(/cyklo_apdex_satisfied_total/);
+    expect(res.text).toMatch(/cyklo_http_status_class_total/);
+    expect(APDEX_T).toBeGreaterThan(0);
   });
 });

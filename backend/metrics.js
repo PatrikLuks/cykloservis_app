@@ -33,6 +33,28 @@ const httpRequestErrorsTotal = new client.Counter({
   labelNames: ['method', 'route', 'status_class'],
 });
 
+// Apdex (Application Performance Index) – threshold T (ms): satisfied (<=T), tolerating (<=4T)
+const APDEX_T = Number(process.env.APDEX_T_MS || 300);
+const apdexSatisfied = new client.Counter({
+  name: 'cyklo_apdex_satisfied_total',
+  help: `Počet požadavků s dobou odezvy <= T (T=${APDEX_T}ms)`,
+});
+const apdexTolerating = new client.Counter({
+  name: 'cyklo_apdex_tolerating_total',
+  help: `Počet požadavků s dobou odezvy mezi T a 4T (T=${APDEX_T}ms)`,
+});
+const apdexAll = new client.Counter({
+  name: 'cyklo_apdex_total',
+  help: 'Celkový počet měřených požadavků pro výpočet Apdex',
+});
+
+// Status class agregace (redukuje cardinalitu oproti plnému status labelu – ponecháme route+method pro konzistenci)
+const httpStatusClassTotal = new client.Counter({
+  name: 'cyklo_http_status_class_total',
+  help: 'Počet HTTP odpovědí podle status class (1xx..5xx)',
+  labelNames: ['method', 'route', 'status_class'],
+});
+
 function metricsMiddleware(req, res, next) {
   const start = process.hrtime.bigint();
   // Optimistické in-flight ++
@@ -50,6 +72,13 @@ function metricsMiddleware(req, res, next) {
       const statusClass = Math.floor(sc / 100) + 'xx';
       httpRequestErrorsTotal.inc({ method: req.method, route, status_class: statusClass });
     }
+    // Status class agregace
+    const statusClass = Math.floor(sc / 100) + 'xx';
+    httpStatusClassTotal.inc({ method: req.method, route, status_class: statusClass });
+    // Apdex klasifikace
+    apdexAll.inc();
+    if (durMs <= APDEX_T) apdexSatisfied.inc();
+    else if (durMs <= APDEX_T * 4) apdexTolerating.inc();
   });
   next();
 }
@@ -69,4 +98,9 @@ module.exports = {
   stopDefaultMetrics,
   httpRequestsInFlight,
   httpRequestErrorsTotal,
+  httpStatusClassTotal,
+  apdexSatisfied,
+  apdexTolerating,
+  apdexAll,
+  APDEX_T,
 };
