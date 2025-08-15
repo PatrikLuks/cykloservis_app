@@ -101,7 +101,9 @@ Pro samostatné spuštění backendu nebo frontendu:
 
 ### Coverage badge
 
-![Coverage](https://img.shields.io/badge/coverage-ci--generated-informational)
+[![Coverage](https://codecov.io/gh/PatrikLuks/cykloservis_app/graph/badge.svg?token=TOKEN)](https://codecov.io/gh/PatrikLuks/cykloservis_app)
+
+> Po aktivaci repozitáře v Codecov lze odebrat `?token=TOKEN` pokud není nutný.
 
 - Spuštění všech backend testů:
   ```sh

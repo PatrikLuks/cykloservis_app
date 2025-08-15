@@ -83,6 +83,14 @@ jobs:
       - name: Show coverage summary
         run: |
           if [ -f backend/coverage/lcov.info ]; then grep -E '^SF:' backend/coverage/lcov.info | wc -l || true; fi
+      - name: Upload coverage to Codecov (backend)
+        uses: codecov/codecov-action@v4
+        with:
+          files: backend/coverage/lcov.info
+          flags: backend
+          name: backend-coverage
+          fail_ci_if_error: false
+          verbose: true
       - name: Upload backend coverage
         uses: actions/upload-artifact@v4
         with:
@@ -109,6 +117,14 @@ jobs:
           cd frontend && npm run test -- --coverage --reporter=default
         env:
           CI: true
+      - name: Upload coverage to Codecov (frontend)
+        uses: codecov/codecov-action@v4
+        with:
+          files: frontend/coverage/lcov.info
+          flags: frontend
+          name: frontend-coverage
+          fail_ci_if_error: false
+          verbose: true
       - name: Upload frontend coverage
         uses: actions/upload-artifact@v4
         with:
