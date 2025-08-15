@@ -1,7 +1,7 @@
 const auditLog = require('../utils/auditLog');
 const express = require('express');
 const router = express.Router();
-const { body, validationResult, query } = require('express-validator');
+const { body } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
@@ -22,7 +22,9 @@ function asyncHandler(fn) {
 function handleValidation(req, res) {
   const errors = require('express-validator').validationResult(req);
   if (!errors.isEmpty()) {
-    res.status(400).json({ errors: errors.array() });
+    res
+      .status(400)
+      .json({ error: 'Validation failed', code: 'VALIDATION_ERROR', details: errors.array() });
     return false;
   }
   return true;
@@ -68,7 +70,7 @@ router.post(
     if (!handleValidation(req, res)) return;
     const { email } = req.body;
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'Uživatel s tímto emailem neexistuje.' });
+    if (!user) return res.status(400).json({ error: 'User not found', code: 'USER_NOT_FOUND' });
     const code = generateCode();
     user.resetPasswordCode = code;
     await user.save();
@@ -93,8 +95,9 @@ router.post(
     const { email, code } = req.body;
     const user = await User.findOne({ email });
     if (!user || !user.resetPasswordCode)
-      return res.status(400).json({ message: 'Neplatný požadavek.' });
-    if (user.resetPasswordCode !== code) return res.status(400).json({ message: 'Chybný kód.' });
+      return res.status(400).json({ error: 'Invalid request', code: 'INVALID_REQUEST' });
+    if (user.resetPasswordCode !== code)
+      return res.status(400).json({ error: 'Invalid code', code: 'INVALID_CODE' });
     res.json({ message: 'Kód ověřen.' });
   })
 );
@@ -116,8 +119,9 @@ router.post(
     const { email, code, newPassword } = req.body;
     const user = await User.findOne({ email });
     if (!user || !user.resetPasswordCode)
-      return res.status(400).json({ message: 'Neplatný požadavek.' });
-    if (user.resetPasswordCode !== code) return res.status(400).json({ message: 'Chybný kód.' });
+      return res.status(400).json({ error: 'Invalid request', code: 'INVALID_REQUEST' });
+    if (user.resetPasswordCode !== code)
+      return res.status(400).json({ error: 'Invalid code', code: 'INVALID_CODE' });
     user.password = await bcrypt.hash(newPassword, 10);
     user.resetPasswordCode = undefined;
     await user.save();
@@ -136,7 +140,7 @@ router.post(
     const { email } = req.body;
     let user = await User.findOne({ email });
     if (user && user.isVerified)
-      return res.status(400).json({ message: 'Účet s tímto emailem již existuje' });
+      return res.status(400).json({ error: 'Account already exists', code: 'ACCOUNT_EXISTS' });
     const code = generateCode();
     if (!user) {
       user = new User({
@@ -175,8 +179,9 @@ router.post(
     if (!handleValidation(req, res)) return;
     const { email, firstName, lastName, birthDate, gender, location } = req.body;
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'Uživatel neexistuje.' });
-    if (!user.isVerified) return res.status(400).json({ message: 'Nejprve ověřte svůj email.' });
+    if (!user) return res.status(400).json({ error: 'User not found', code: 'USER_NOT_FOUND' });
+    if (!user.isVerified)
+      return res.status(400).json({ error: 'Email not verified', code: 'EMAIL_NOT_VERIFIED' });
     user.firstName = firstName;
     user.lastName = lastName;
     user.birthDate = birthDate;
@@ -210,14 +215,16 @@ router.post(
     if (!handleValidation(req, res)) return;
     const { email, password } = req.body;
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'Uživatel s tímto emailem neexistuje.' });
-    if (!user.isVerified) return res.status(400).json({ message: 'Email není ověřen' });
+    if (!user) return res.status(400).json({ error: 'User not found', code: 'USER_NOT_FOUND' });
+    if (!user.isVerified)
+      return res.status(400).json({ error: 'Email not verified', code: 'EMAIL_NOT_VERIFIED' });
     if (!user.password)
       return res
         .status(400)
-        .json({ message: 'Uživatel nemá nastavené heslo. Dokončete registraci.' });
+        .json({ error: 'Password not set. Complete registration.', code: 'PASSWORD_NOT_SET' });
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: 'Nesprávné heslo' });
+    if (!isMatch)
+      return res.status(400).json({ error: 'Invalid credentials', code: 'INVALID_CREDENTIALS' });
     const token = jwt.sign({ id: user._id, role: user.role || 'user' }, process.env.JWT_SECRET, {
       expiresIn: '7d',
     });
@@ -237,10 +244,11 @@ router.post(
     if (!handleValidation(req, res)) return;
     const { email, code } = req.body;
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'Uživatel neexistuje.' });
-    if (user.isVerified) return res.status(400).json({ message: 'Email již byl ověřen.' });
+    if (!user) return res.status(400).json({ error: 'User not found', code: 'USER_NOT_FOUND' });
+    if (user.isVerified)
+      return res.status(400).json({ error: 'Email already verified', code: 'ALREADY_VERIFIED' });
     if (!user.verificationCode || user.verificationCode.trim() !== String(code).trim()) {
-      return res.status(400).json({ message: 'Neplatný ověřovací kód.' });
+      return res.status(400).json({ error: 'Invalid code', code: 'INVALID_CODE' });
     }
     user.isVerified = true;
     user.verificationCode = undefined;

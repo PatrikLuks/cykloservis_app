@@ -1,8 +1,6 @@
 const request = require('supertest');
 const app = require('..');
-const { ensureDb, createUserAndLogin, createBike } = require('./helpers/testFactory');
-const mongoose = require('mongoose');
-const path = require('path');
+const { ensureDb, createUserAndLogin } = require('./helpers/testFactory');
 
 beforeAll(async () => {
   await ensureDb();

@@ -28,7 +28,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  /* global teardown handles disconnect */
+  // global teardown handles disconnect
 });
 
 function auth() {

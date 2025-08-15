@@ -8,7 +8,7 @@ beforeAll(async () => {
   await ensureDb();
 });
 afterAll(async () => {
-  /* global teardown disconnect */
+  // global teardown handles disconnect
 });
 
 describe('Auth API', () => {

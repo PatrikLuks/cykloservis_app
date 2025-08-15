@@ -8,7 +8,7 @@ beforeAll(async () => {
   await ensureDb();
 });
 afterAll(async () => {
-  /* global teardown disconnect */
+  // global teardown disconnect
 });
 
 describe('E2E Registration Flow', () => {

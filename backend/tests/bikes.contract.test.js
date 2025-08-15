@@ -44,7 +44,7 @@ describe('Bikes contract', () => {
   });
 
   it('GET /bikes vrací 500 při simulovaném selhání DB (mock find)', async () => {
-    const Bike = require('../models/Bike');
+    const Bike = require('../models/Bike'); // used for spy
     const original = Bike.find;
     jest.spyOn(Bike, 'find').mockImplementationOnce(() => ({
       sort: () => {
@@ -138,8 +138,8 @@ describe('Bikes contract', () => {
 
   it('POST /bikes vrací 500 při simulovaném selhání DB (mock)', async () => {
     process.env.MAX_BIKES_PER_USER = '100';
-    const Bike = require('../models/Bike');
-    jest.spyOn(Bike, 'create').mockRejectedValueOnce(new Error('Simulated failure'));
+    const bikeModel = require('../models/Bike');
+    jest.spyOn(bikeModel, 'create').mockRejectedValueOnce(new Error('Simulated failure'));
     const res = await request(app)
       .post('/bikes')
       .set('Authorization', `Bearer ${token}`)
@@ -150,7 +150,7 @@ describe('Bikes contract', () => {
 
   it('PUT /bikes/{id} vrací 500 při simulovaném selhání DB (mock findOneAndUpdate)', async () => {
     process.env.MAX_BIKES_PER_USER = '100';
-    const Bike = require('../models/Bike');
+    const bikeModel = require('../models/Bike');
     // vytvořit reálné kolo
     const create = await request(app)
       .post('/bikes')
@@ -159,7 +159,7 @@ describe('Bikes contract', () => {
       .expect(201);
     const bikeId = create.body.id;
     const spy = jest
-      .spyOn(Bike, 'findOneAndUpdate')
+      .spyOn(bikeModel, 'findOneAndUpdate')
       .mockRejectedValueOnce(new Error('Update fail'));
     const res = await request(app)
       .put(`/bikes/${bikeId}`)
@@ -173,7 +173,7 @@ describe('Bikes contract', () => {
   it('POST /bikes/{id}/image vrací 500 při chybě zápisu souboru (mock writeFile)', async () => {
     process.env.MAX_BIKES_PER_USER = '100';
     const fs = require('fs');
-    const Bike = require('../models/Bike');
+    // bikeModel not needed here
     const create = await request(app)
       .post('/bikes')
       .set('Authorization', `Bearer ${token}`)

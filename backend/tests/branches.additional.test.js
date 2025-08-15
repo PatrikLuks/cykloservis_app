@@ -1,9 +1,9 @@
 const request = require('supertest');
 const app = require('..');
 const mongoose = require('mongoose');
-const { ensureDb, createUserAndLogin, createBike } = require('./helpers/testFactory');
+const { ensureDb, createUserAndLogin } = require('./helpers/testFactory');
 const User = require('../models/User');
-const Bike = require('../models/Bike');
+// Bike model not needed directly here
 
 jest.setTimeout(30000);
 
@@ -11,7 +11,7 @@ beforeAll(async () => {
   await ensureDb();
 });
 afterAll(async () => {
-  /* global teardown */
+  // global teardown
 });
 
 describe('Additional branch coverage scenarios', () => {

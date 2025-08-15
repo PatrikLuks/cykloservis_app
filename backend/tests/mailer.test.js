@@ -1,4 +1,4 @@
-const path = require('path');
+// no path usage
 
 describe('mailer branches', () => {
   const originalEnv = { ...process.env };

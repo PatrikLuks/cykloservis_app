@@ -1,7 +1,6 @@
 jest.setTimeout(20000);
 const request = require('supertest');
 const app = require('..');
-const mongoose = require('mongoose');
 const User = require('../models/User');
 const { ensureDb } = require('./helpers/testFactory');
 
@@ -38,7 +37,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  /* global teardown handles disconnect */
+  // cleanup handled globally
 });
 
 function auth(t) {
