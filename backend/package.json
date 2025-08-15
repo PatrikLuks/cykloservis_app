@@ -14,6 +14,7 @@
     "lint:openapi": "redocly lint openapi.yaml",
     "lint:error-codes": "node scripts/lintErrorCodes.js",
     "gen:operation-ids": "node scripts/generateOperationIds.js",
+    "gen:types": "npx openapi-typescript openapi.yaml --output ../frontend/src/generated/schema.d.ts",
     "seed:bikes": "node scripts/seedBikes.js",
     "purge:bikes": "node scripts/purgeDeletedBikes.js",
     "migrate:bikes:ownerEmailLower": "node scripts/migrateOwnerEmailLower.js"

@@ -49,6 +49,10 @@ jobs:
         run: |
           node scripts/generateOperationIds.js
           git diff --quiet types/operation-ids.d.ts || (echo 'operation-ids.d.ts not committed'; git --no-pager diff types/operation-ids.d.ts; exit 1)
+      - name: Generate frontend API types
+        run: |
+          cd backend && npm run gen:types || true
+          git diff --quiet frontend/src/api/generated/schema.d.ts || (echo 'Generated schema.d.ts differs; please commit.'; git --no-pager diff frontend/src/api/generated/schema.d.ts; exit 1)
       - name: Contract tests
         working-directory: backend
         env:
