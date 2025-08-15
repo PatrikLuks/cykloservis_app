@@ -86,11 +86,14 @@ app.use(
   })
 );
 
-if (!process.env.SKIP_DB && !process.env.JEST_WORKER_ID) {
-  mongoose
-    .connect(process.env.MONGO_URI)
+function connectMongo(connectImpl = mongoose.connect) {
+  return connectImpl(process.env.MONGO_URI)
     .then(() => logger.info('MongoDB connected'))
     .catch((err) => logger.error({ err }, 'MongoDB connection error'));
+}
+
+if (!process.env.SKIP_DB && !process.env.JEST_WORKER_ID) {
+  connectMongo();
 } else {
   logger.warn('SKIP_DB=1 nebo testovací prostředí => přeskočeno připojení k MongoDB');
 }
@@ -125,6 +128,13 @@ if (!process.env.JEST_WORKER_ID) {
   // don't auto-listen under Jest so supertest gets the bare app
   const PORT = process.env.PORT || 5001;
   server = app.listen(PORT, () => logger.info({ port: PORT }, 'Server listening'));
+}
+
+// Explicit start pro testy aby šla pokrýt větev se server.close v shutdown
+function _startTestServer() {
+  if (server) return server; // already started
+  server = app.listen(0); // random free port
+  return server;
 }
 
 // Graceful shutdown
@@ -177,3 +187,5 @@ module.exports = app;
 // Pro test teardown: exportujeme rate limitery ke korektnímu ukončení intervalů
 module.exports._rateLimiters = limiter ? [limiter, sensitiveLimiter] : [];
 module.exports._shutdown = shutdown;
+module.exports._startTestServer = _startTestServer;
+module.exports.connectMongo = connectMongo;
