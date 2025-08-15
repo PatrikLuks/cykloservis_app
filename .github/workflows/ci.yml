@@ -147,3 +147,33 @@ jobs:
       - name: Stop server
         run: |
           kill $(cat backend_server.pid) || true
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: full-tests
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        run: docker build -t serviskol-backend:ci ./backend
+      - name: Build frontend image
+        run: docker build -t serviskol-frontend:ci ./frontend
+
+  compose-smoke:
+    runs-on: ubuntu-latest
+    needs: docker-build
+    steps:
+      - uses: actions/checkout@v4
+      - name: Docker compose up
+        run: |
+          docker compose up -d --build
+          sleep 8
+          curl -f http://localhost:5001/api/health/health
+          curl -f http://localhost:8080/health || echo 'frontend health not configured'
+      - name: Logs (backend)
+        if: failure()
+        run: docker logs serviskol-backend || true
+      - name: Logs (frontend)
+        if: failure()
+        run: docker logs serviskol-frontend || true
+      - name: Compose down
+        run: docker compose down -v

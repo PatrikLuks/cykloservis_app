@@ -1,0 +1,32 @@
+version: '3.9'
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: serviskol-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+  backend:
+    build: ./backend
+    container_name: serviskol-backend
+    environment:
+      PORT: 5001
+      MONGO_URI: mongodb://mongo:27017/serviskol
+      JWT_SECRET: change-me
+    ports:
+      - "5001:5001"
+    depends_on:
+      - mongo
+  frontend:
+    build: ./frontend
+    container_name: serviskol-frontend
+    environment:
+      VITE_API_BASE_URL: http://localhost:5001
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+volumes:
+  mongo_data:
