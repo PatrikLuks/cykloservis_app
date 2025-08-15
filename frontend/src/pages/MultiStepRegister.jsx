@@ -1,434 +1,228 @@
-import { Spinner, InputErrorMessage } from '../components/CommonUI';
-import CodeInput from '../components/CodeInput';
-import React, { useState, useEffect } from 'react';
-import api from '../utils/apiClient';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './MultiStepRegister.css';
+import api from '../utils/apiClient';
 import RegisterNavbar from './RegisterNavbar';
+import { Spinner, InputErrorMessage } from '../components/CommonUI.jsx';
+import CodeInput from '../components/CodeInput.jsx';
 import { getPasswordValidations } from '../utils/passwordValidation';
+import './MultiStepRegister.css';
 
-const steps = [
-  'Vytvořit Účet',
-  'Zadejte heslo',
-  'Zadejte kód, který jste obdrželi',
-  'Dokončete svůj účet',
-];
+/*
+  Rekonstrukce více‑krokové registrace – inkrementálně.
+  Fáze 1: pouze krok e‑mailu (STEP 0) s validací a voláním /auth/register.
+  Další kroky (heslo, kód, profil) budou doplněny postupně po otestování základu.
+*/
+
+const STEP = {
+  EMAIL: 0,
+  PASSWORD: 1, // zatím neimplementováno
+  CODE: 2, // zatím neimplementováno
+  PROFILE: 3, // zatím neimplementováno
+};
 
 export default function MultiStepRegister() {
-  const [step, setStep] = useState(0);
-  const [form, setForm] = useState({
-    email: '',
-    password: '',
+  const [step, setStep] = useState(STEP.EMAIL);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [loadingPassword, setLoadingPassword] = useState(false);
+  const [code, setCode] = useState(['', '', '', '', '', '']);
+  const codeRefs = useRef(Array.from({ length: 6 }, () => React.createRef()));
+  const [verifying, setVerifying] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resending, setResending] = useState(false);
+  const [profile, setProfile] = useState({
     firstName: '',
     lastName: '',
     birthDate: '',
     gender: '',
     location: '',
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [code, setCode] = useState(['', '', '', '', '', '']);
-  const codeInputs = React.useRef(Array.from({ length: 6 }, () => React.createRef()));
-  // Nový stav pro spinner v resend tlačítku
-  const [loadingResend, setLoadingResend] = useState(false);
-
-  // Načti email z query parametru při načtení komponenty
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const email = params.get('email');
-    const stepParam = params.get('step');
-    if (email) {
-      setForm((f) => ({ ...f, email }));
-    }
-    if (stepParam && !isNaN(Number(stepParam))) {
-      setStep(Number(stepParam));
-    }
-  }, []);
-  const [message, setMessage] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
   const navigate = useNavigate();
 
-  // Krok 1: Registrace
-  // Krok 1: Email
-  // Uložený email pro porovnání při návratu na krok 1
-
-  // Krok 1: pouze posun na další krok
-  // Helper for robust error match
+  const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   const isEmailError = (msg) =>
-    msg && (msg.toLowerCase().includes('existuje') || msg === 'Zadejte platnou e-mailovou adresu');
-  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    msg && (msg.includes('platnou') || msg.toLowerCase().includes('existuje'));
 
-  const [loadingEmail, setLoadingEmail] = useState(false);
-  const handleEmailOnly = async (e) => {
+  const handleSubmitEmail = async (e) => {
     e.preventDefault();
-    if (!form.email || !isValidEmail(form.email)) {
+    if (!isValidEmail(email)) {
       setMessage('Zadejte platnou e-mailovou adresu');
       return;
     }
     setMessage('');
-    setLoadingEmail(true);
+    setLoading(true);
     try {
-      await api.post('/auth/register', { email: form.email });
-      setStep(1);
+      await api.post('/auth/register', { email });
+      setStep(STEP.PASSWORD); // posun na další krok (zatím placeholder)
     } catch (err) {
-      const msg = err.response?.data?.message || '';
-      // Pokud email existuje, přesměruj na login s předvyplněným emailem
-      if (msg.toLowerCase().includes('existuje')) {
-        navigate(`/login?email=${encodeURIComponent(form.email)}`);
-      } else {
-        setMessage(msg || 'Chyba při registraci');
-      }
+      const msg = err?.response?.data?.message || 'Chyba při registraci';
+      setMessage(msg);
     } finally {
-      setLoadingEmail(false);
+      setLoading(false);
     }
   };
 
-  // Krok 2: Heslo
-  // Krok 2: pouze posun na další krok
-  // Krok 2: po zadání hesla automaticky odešle kód na email a posune na krok 3
-  const [loadingPassword, setLoadingPassword] = useState(false);
-  const [loadingPersonal, setLoadingPersonal] = useState(false);
-  const handlePassword = async (e) => {
+  const passwordValidations = getPasswordValidations(password);
+  const allPasswordValid = password.length > 0 && passwordValidations.every((v) => v.valid);
+
+  const handleSubmitPassword = async (e) => {
     e.preventDefault();
+    if (!allPasswordValid) return;
     setMessage('');
     setLoadingPassword(true);
     try {
-      await api.post('/auth/save-password', { email: form.email, password: form.password });
-      setStep(2); // posun na krok ověření kódu
-      setMessage('Kód byl zaslán na váš e-mail.');
+      await api.post('/auth/save-password', { email, password });
+      setStep(STEP.CODE); // placeholder pro další krok
+      // Po úspěchu automaticky požádat backend (znovu) o zaslání kódu – reuse /auth/register (pokud tak backend funguje)
+      try {
+        await api.post('/auth/register', { email });
+      } catch (e) {
+        /* optional retry suppressed */
+      }
+      setResendCooldown(30);
     } catch (err) {
-      setMessage('Chyba při ukládání hesla');
-      setLoadingPassword(false);
-      return;
-    }
-    setTimeout(() => {
-      setStep(2); // posun na krok ověření kódu
-      setLoadingPassword(false);
-    }, 300); // malá prodleva pro UX konzistenci
-  };
-
-  // Krok 3: nejprve odešle email na backend, pak čeká na zadání kódu
-  const [resendCooldown, setResendCooldown] = useState(0);
-
-  // Cooldown for resend button
-  useEffect(() => {
-    let timer;
-    if (resendCooldown > 0) {
-      timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
-    }
-    return () => clearTimeout(timer);
-  }, [resendCooldown]);
-  const handleRequestCode = async () => {
-    if (resendCooldown > 0 || loadingResend) return;
-    setMessage('');
-    setLoadingResend(true);
-    try {
-      await api.post('/auth/register', { email: form.email });
-      setResendCooldown(30); // 30s cooldown
-      setMessage('Kód byl odeslán na váš email.');
-    } catch (err) {
-      setMessage(err.response?.data?.message || 'Chyba při odesílání kódu');
+      setMessage(err?.response?.data?.message || 'Chyba při ukládání hesla');
     } finally {
-      setLoadingResend(false);
+      setLoadingPassword(false);
     }
   };
 
-  // Ověření kódu
-  const handleVerifyCode = async (e) => {
-    e.preventDefault && e.preventDefault();
+  // Odpočet resend cooldownu
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
+
+  const handleResendCode = async () => {
+    if (resending || resendCooldown > 0) return;
     setMessage('');
-    const codeStr = Array.isArray(code) ? code.join('') : code;
+    setResending(true);
     try {
-      await api.post('/auth/verify-code', { email: form.email, code: codeStr });
-      setStep(3);
-      // Nezobrazuj žádnou message v kroku dokončení registrace
+      await api.post('/auth/register', { email });
+      setResendCooldown(30);
+      setMessage('Kód znovu odeslán.');
+    } catch (err) {
+      setMessage(err?.response?.data?.message || 'Chyba při odesílání kódu');
+    } finally {
+      setResending(false);
+    }
+  };
+
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
+    if (code.some((d) => !d)) return;
+    setMessage('');
+    setVerifying(true);
+    try {
+      await api.post('/auth/verify-code', { email, code: code.join('') });
+      setStep(STEP.PROFILE); // Další krok bude teprve implementován
     } catch (err) {
       setMessage('Nesprávný ověřovací kód');
+    } finally {
+      setVerifying(false);
     }
   };
 
-  // Krok 4: Odeslání všeho na backend
-  const handlePersonalData = async (e) => {
+  const profileValid =
+    profile.firstName &&
+    profile.lastName &&
+    profile.birthDate &&
+    profile.gender &&
+    profile.location;
+
+  const handleProfileChange = (e) => {
+    const { name, value } = e.target;
+    setProfile((p) => ({ ...p, [name]: value }));
+  };
+
+  const handleSubmitProfile = async (e) => {
     e.preventDefault();
-    setLoadingPersonal(true);
+    if (!profileValid) return;
+    setMessage('');
+    setSavingProfile(true);
     try {
-      const data = {
-        email: form.email,
-        firstName: form.firstName,
-        lastName: form.lastName,
-        birthDate: form.birthDate,
-        gender: form.gender,
-        location: form.location,
-      };
-      if (form.password) {
-        data.password = form.password;
-      }
-      await api.post('/auth/complete-profile', data);
+      await api.post('/auth/complete-profile', { email, ...profile, password });
       navigate('/dashboard');
     } catch (err) {
-      setMessage(err.response?.data?.message || 'Chyba při registraci');
+      setMessage(err?.response?.data?.message || 'Chyba při dokončení profilu');
+    } finally {
+      setSavingProfile(false);
     }
   };
-
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    if (e.target.name === 'email' && isEmailError(message)) {
-      setMessage('');
-    }
-  };
-
-  // Validace hesla
-  const passwordValidations = getPasswordValidations(form.password);
 
   return (
     <>
       <RegisterNavbar />
-      <div className="register-layout">
+      <div className="register-layout" data-testid="register-layout">
         <div className="register-image" />
         <div className="register-right">
           <div className="register-container">
-            <div className="register-progress-bar">
+            {/* Progress bar (zatím jen 1/4) */}
+            <div className="register-progress-bar" aria-label="Průběh registrace">
               <div
                 className="register-progress-bar-fill"
-                style={{ width: `${((step + 1) / steps.length) * 100}%` }}
+                style={{ width: `${((step + 1) / 4) * 100}%` }}
               />
             </div>
-            {step === 0 && (
+
+            {step === STEP.EMAIL && (
               <>
-                <h2 className="register-title">{steps[0]}</h2>
-                <form className="register-form" onSubmit={handleEmailOnly}>
+                <h2 className="register-title">Vytvořit účet</h2>
+                <form className="register-form" onSubmit={handleSubmitEmail} noValidate>
                   <div className="register-field">
                     <label htmlFor="email" className="register-label">
                       E-mail
                     </label>
                     <input
-                      type="text"
                       id="email"
                       name="email"
+                      type="email"
                       placeholder="priklad@mail.com"
-                      value={form.email}
-                      onChange={handleChange}
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (isEmailError(message)) setMessage('');
+                      }}
                       autoComplete="email"
                       inputMode="email"
                       spellCheck={false}
                       className={isEmailError(message) ? 'input-error' : ''}
+                      aria-invalid={isEmailError(message) ? 'true' : 'false'}
                     />
                     {isEmailError(message) && <InputErrorMessage>{message}</InputErrorMessage>}
                   </div>
                   <button
                     type="submit"
-                    disabled={loadingEmail}
+                    disabled={loading}
                     style={{ minHeight: 48, height: 48, fontWeight: 500 }}
                   >
-                    {loadingEmail ? <Spinner /> : 'Pokračovat'}
+                    {loading ? <Spinner /> : 'Pokračovat'}
                   </button>
-                  <div className="register-or">
-                    <span>Nebo se přihlaste pomocí</span>
-                    <div className="register-social-row">
-                      <div className="register-social-btn">
-                        <img
-                          src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/24px-Google_%22G%22_logo.svg.png?20230822192911"
-                          alt="Google-logo"
-                        />
-                      </div>
-                    </div>
-                  </div>
                 </form>
-
-                <div className="already-registered-button">
-                  <div className="have-an-account"> Už máte účet?</div>
-
-                  <a href="/login" className="register-login-link">
-                    Přihlásit se
-                  </a>
-                </div>
-                <div className="register-terms">
-                  Souhlasím s vytvořením účtu pomocí e-mailové adresy podle{' '}
-                  <a href="https://bear-servis.cz/">obchodních podmínek</a>.
-                </div>
+                {message && !isEmailError(message) && (
+                  <div className="register-message">{message}</div>
+                )}
               </>
             )}
-            {step === 1 && (
-              <>
-                <h2 className="register-title">{steps[1]}</h2>
 
-                <div className="register-password-header">
-                  <span style={{ fontWeight: 'bold' }}>{form.email}</span>
-                  <button type="button" className="register-edit-email" onClick={() => setStep(0)}>
-                    Upravit
-                  </button>
-                </div>
-                <div className="register-password-step">
-                  <form className="register-form" onSubmit={handlePassword}>
-                    <div className="password-field">
-                      <label htmlFor="password" className="register-label">
-                        Zadejte heslo
-                      </label>
-                      <div className="register-password-input-wrapper">
-                        <input
-                          type={showPassword ? 'text' : 'password'}
-                          id="password"
-                          name="password"
-                          placeholder="Heslo"
-                          value={form.password}
-                          onChange={handleChange}
-                          required
-                          autoComplete="new-password"
-                        />
-                        <span
-                          className="register-password-eye"
-                          tabIndex={0}
-                          role="button"
-                          aria-label={showPassword ? 'Skrýt heslo' : 'Zobrazit heslo'}
-                          onClick={() => setShowPassword((v) => !v)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') setShowPassword((v) => !v);
-                          }}
-                        >
-                          {showPassword ? (
-                            // Oko s křížkem přes něj
-                            <svg
-                              width="24"
-                              height="24"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <circle cx="12" cy="12" r="3.5" stroke="#222" strokeWidth="1.5" />
-                              <path
-                                d="M2 12C3.73 7.61 7.86 4.5 12 4.5C16.14 4.5 20.27 7.61 22 12C20.27 16.39 16.14 19.5 12 19.5C7.86 19.5 3.73 16.39 2 12Z"
-                                stroke="#222"
-                                strokeWidth="1.5"
-                              />
-                              <line
-                                x1="6"
-                                y1="6"
-                                x2="18"
-                                y2="18"
-                                stroke="#222"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                              />
-                            </svg>
-                          ) : (
-                            // Otevřené oko (eye)
-                            <svg
-                              width="24"
-                              height="24"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <circle cx="12" cy="12" r="3.5" stroke="#222" strokeWidth="1.5" />
-                              <path
-                                d="M2 12C3.73 7.61 7.86 4.5 12 4.5C16.14 4.5 20.27 7.61 22 12C20.27 16.39 16.14 19.5 12 19.5C7.86 19.5 3.73 16.39 2 12Z"
-                                stroke="#222"
-                                strokeWidth="1.5"
-                              />
-                            </svg>
-                          )}
-                        </span>
-                      </div>
-                    </div>
-
-                    <ul className="register-password-criteria">
-                      {passwordValidations.map((v, i) => (
-                        <li key={i}>
-                          <span
-                            className={
-                              v.valid ? 'criteria-circle criteria-circle-valid' : 'criteria-circle'
-                            }
-                          ></span>{' '}
-                          {v.label}
-                        </li>
-                      ))}
-                    </ul>
-                    <button
-                      type="submit"
-                      disabled={!passwordValidations.every((v) => v.valid) || loadingPassword}
-                      style={{
-                        background: passwordValidations.every((v) => v.valid)
-                          ? '#1976d2'
-                          : '#88accfff',
-                        color: '#fff',
-                        position: 'relative',
-                      }}
-                    >
-                      {loadingPassword ? <Spinner /> : 'Pokračovat'}
-                    </button>
-                  </form>
-                </div>
-              </>
-            )}
-            {step === 2 && (
-              <>
-                <h2 className="register-title">{steps[2]}</h2>
-                <form
-                  className="register-form"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const codeStr = code.join('');
-                    handleVerifyCode({ preventDefault: () => {}, target: { value: codeStr } });
-                  }}
-                >
-                  <label className="form-desc">
-                    Při registraci je vyžadován kód pro ověření. Tento jednorázový kód je odeslán na
-                    adresu:
-                  </label>
-                  <div className="register-password-header">
-                    <span style={{ fontWeight: 'bold' }}>{form.email}</span>
-                  </div>
-                  <CodeInput
-                    code={code}
-                    setCode={setCode}
-                    message={message}
-                    codeInputs={codeInputs.current}
-                  />
-                  <button
-                    type="submit"
-                    disabled={code.some((d) => !d)}
-                    style={{ minHeight: 48, height: 48, fontWeight: 500 }}
-                  >
-                    Ověřit
-                  </button>
-                  <span
-                    className={`resend-code-link${resendCooldown > 0 || loadingResend ? ' disabled' : ''}`}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => {
-                      if (resendCooldown === 0 && !loadingResend) handleRequestCode();
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && resendCooldown === 0 && !loadingResend)
-                        handleRequestCode();
-                    }}
-                    aria-disabled={resendCooldown > 0 || loadingResend}
-                    style={{ position: 'relative', minWidth: 120, display: 'inline-block' }}
-                  >
-                    {loadingResend ? (
-                      <Spinner />
-                    ) : resendCooldown > 0 ? (
-                      `Zaslat znovu (${resendCooldown}s)`
-                    ) : (
-                      'Zaslat kód znovu'
-                    )}
-                  </span>
-                </form>
-              </>
-            )}
-            {step === 3 && (
-              <>
-                <h2 className="register-title">{steps[3]}</h2>
-                <form className="register-form" onSubmit={handlePersonalData}>
+            {step === STEP.PROFILE && (
+              <div data-testid="profile-step" style={{ padding: '8px 0 32px' }}>
+                <h2 className="register-title">Dokončete svůj účet</h2>
+                <form className="register-form" onSubmit={handleSubmitProfile} noValidate>
                   <div className="register-field">
                     <label htmlFor="firstName" className="register-label">
                       Jméno
                     </label>
                     <input
-                      type="text"
                       id="firstName"
                       name="firstName"
-                      placeholder="Jméno"
-                      value={form.firstName}
-                      onChange={handleChange}
+                      value={profile.firstName}
+                      onChange={handleProfileChange}
                       required
                     />
                   </div>
@@ -437,12 +231,10 @@ export default function MultiStepRegister() {
                       Příjmení
                     </label>
                     <input
-                      type="text"
                       id="lastName"
                       name="lastName"
-                      placeholder="Příjmení"
-                      value={form.lastName}
-                      onChange={handleChange}
+                      value={profile.lastName}
+                      onChange={handleProfileChange}
                       required
                     />
                   </div>
@@ -450,44 +242,14 @@ export default function MultiStepRegister() {
                     <label htmlFor="birthDate" className="register-label">
                       Datum narození
                     </label>
-                    <div className="date-input-wrapper">
-                      <input
-                        type="date"
-                        id="birthDate"
-                        name="birthDate"
-                        placeholder="Datum narození"
-                        value={form.birthDate}
-                        onChange={handleChange}
-                        required
-                        className="styled-date-input"
-                      />
-                      <span className="calendar-icon" aria-hidden="true">
-                        <svg
-                          width="20"
-                          height="20"
-                          viewBox="0 0 20 20"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <rect
-                            x="3"
-                            y="5"
-                            width="14"
-                            height="12"
-                            rx="2"
-                            stroke="#888"
-                            strokeWidth="1.5"
-                          />
-                          <path
-                            d="M7 2V5M13 2V5"
-                            stroke="#888"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                          />
-                          <rect x="7" y="9" width="2" height="2" rx="1" fill="#888" />
-                        </svg>
-                      </span>
-                    </div>
+                    <input
+                      id="birthDate"
+                      name="birthDate"
+                      type="date"
+                      value={profile.birthDate}
+                      onChange={handleProfileChange}
+                      required
+                    />
                   </div>
                   <div className="register-field">
                     <label htmlFor="gender" className="register-label">
@@ -496,11 +258,11 @@ export default function MultiStepRegister() {
                     <select
                       id="gender"
                       name="gender"
-                      value={form.gender}
-                      onChange={handleChange}
+                      value={profile.gender}
+                      onChange={handleProfileChange}
                       required
                     >
-                      <option value="">Pohlaví</option>
+                      <option value="">Vyberte</option>
                       <option value="male">Muž</option>
                       <option value="female">Žena</option>
                       <option value="other">Jiné</option>
@@ -511,26 +273,142 @@ export default function MultiStepRegister() {
                       Lokalita
                     </label>
                     <input
-                      type="text"
                       id="location"
                       name="location"
-                      placeholder="Např. Město, Kraj, Stát"
-                      value={form.location}
-                      onChange={handleChange}
+                      value={profile.location}
+                      onChange={handleProfileChange}
+                      placeholder="Město"
                       required
-                      autoComplete="off"
                     />
                   </div>
-                  <button type="submit" disabled={loadingPersonal} style={{ position: 'relative' }}>
-                    {loadingPersonal ? <Spinner /> : 'Dokončit registraci'}
+                  <button
+                    type="submit"
+                    data-testid="profile-submit"
+                    disabled={!profileValid || savingProfile}
+                    style={{ minHeight: 48, height: 48, fontWeight: 500 }}
+                  >
+                    {savingProfile ? <Spinner /> : 'Dokončit registraci'}
                   </button>
-                  {message && (
-                    <InputErrorMessage style={{ marginTop: 16 }}>{message}</InputErrorMessage>
-                  )}
                 </form>
-              </>
+                {message && (
+                  <div className="register-message" style={{ marginTop: 16 }}>
+                    {message}
+                  </div>
+                )}
+              </div>
             )}
-            {step !== 3 && step !== 2 && <div className="register-message">{message}</div>}
+
+            {step === STEP.PASSWORD && (
+              <div data-testid="password-step" style={{ padding: '8px 0 32px' }}>
+                <h2 className="register-title">Zadejte heslo</h2>
+                <form className="register-form" onSubmit={handleSubmitPassword} noValidate>
+                  <div className="register-field password-field">
+                    <label htmlFor="password" className="register-label">
+                      Heslo
+                    </label>
+                    <div className="register-password-input-wrapper">
+                      <input
+                        id="password"
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        value={password}
+                        autoComplete="new-password"
+                        onChange={(e) => setPassword(e.target.value)}
+                        data-testid="password-input"
+                      />
+                      <span
+                        className="register-password-eye"
+                        role="button"
+                        tabIndex={0}
+                        aria-label={showPassword ? 'Skrýt' : 'Zobrazit'}
+                        onClick={() => setShowPassword((v) => !v)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') setShowPassword((v) => !v);
+                        }}
+                      >
+                        {showPassword ? '🙈' : '👁️'}
+                      </span>
+                    </div>
+                  </div>
+                  <ul className="register-password-criteria" aria-label="Kritéria hesla">
+                    {passwordValidations.map((v) => (
+                      <li key={v.label}>
+                        <span
+                          className={
+                            v.valid ? 'criteria-circle criteria-circle-valid' : 'criteria-circle'
+                          }
+                        />
+                        {v.label}
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    type="submit"
+                    disabled={!allPasswordValid || loadingPassword || password.length === 0}
+                    style={{
+                      minHeight: 48,
+                      height: 48,
+                      fontWeight: 500,
+                      background: allPasswordValid ? '#1976d2' : '#88accfff',
+                      color: '#fff',
+                    }}
+                    data-testid="password-submit"
+                  >
+                    {loadingPassword ? <Spinner /> : 'Pokračovat'}
+                  </button>
+                </form>
+                {message && (
+                  <div className="register-message" style={{ marginTop: 16 }}>
+                    {message}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {step === STEP.CODE && (
+              <div data-testid="code-step" style={{ padding: '8px 0 32px' }}>
+                <h2 className="register-title">Zadejte kód</h2>
+                <form className="register-form" onSubmit={handleVerifyCode} noValidate>
+                  <p className="form-desc" style={{ marginTop: 0 }}>
+                    Zadejte 6‑místný kód zaslaný na <strong>{email}</strong>.
+                  </p>
+                  <CodeInput
+                    code={code}
+                    setCode={setCode}
+                    message={message}
+                    codeInputs={codeRefs.current}
+                  />
+                  <button
+                    type="submit"
+                    disabled={code.some((d) => !d) || verifying}
+                    style={{ minHeight: 48, height: 48, fontWeight: 500 }}
+                    data-testid="code-submit"
+                  >
+                    {verifying ? <Spinner /> : 'Ověřit kód'}
+                  </button>
+                </form>
+                <button
+                  type="button"
+                  onClick={handleResendCode}
+                  disabled={resending || resendCooldown > 0}
+                  className={`resend-code-link${resendCooldown > 0 ? ' disabled' : ''}`}
+                  style={{ marginTop: 16 }}
+                  data-testid="resend-btn"
+                >
+                  {resending
+                    ? 'Odesílám…'
+                    : resendCooldown > 0
+                      ? `Znovu (${resendCooldown}s)`
+                      : 'Zaslat kód znovu'}
+                </button>
+                {message && message !== 'Nesprávný ověřovací kód' && (
+                  <div className="register-message" style={{ marginTop: 16 }}>
+                    {message}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

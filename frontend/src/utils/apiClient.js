@@ -1,14 +1,14 @@
 import axios from 'axios';
 
-// Vytvoření centrálního API klienta s BASE_URL z env (CRA: REACT_APP_*)
-const baseURL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+// Vite používá import.meta.env; podpora původního CRA prefixu nahrazena proměnnou VITE_API_BASE_URL.
+const baseURL = (import.meta.env && import.meta.env.VITE_API_BASE_URL) || 'http://localhost:5001';
 
 export const api = axios.create({
   baseURL,
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
   },
-  withCredentials: false
+  withCredentials: false,
 });
 
 // Attach Authorization header if token present
@@ -27,7 +27,11 @@ api.interceptors.response.use(
   (error) => {
     const status = error?.response?.status;
     if (status === 401 || status === 403) {
-      try { localStorage.removeItem('token'); } catch {}
+      try {
+        localStorage.removeItem('token');
+      } catch (e) {
+        /* ignore storage */
+      }
       if (typeof window !== 'undefined') {
         const current = window.location.pathname + window.location.search;
         if (!current.startsWith('/login')) {
