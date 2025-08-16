@@ -373,7 +373,7 @@ const Dashboard = () => {
                   {!activityLoading && activity.length === 0 && (
                     <tr><td colSpan={4} className="muted">Žádná aktivita.</td></tr>
                   )}
-                  {!activityLoading && activity.map(item => {
+                  {!activityLoading && activity.slice(0, 5).map(item => {
                     let eventLabel = '';
                     let statusEl = null;
                     if (item.action === 'bike_create') { eventLabel = 'Přidáno kolo'; statusEl = <span className="chip" style={{background:'#eff2ff'}}>Nové</span>; }
@@ -394,6 +394,7 @@ const Dashboard = () => {
                 </tbody>
               </table>
             </div>
+            {/* Omezena viditelnost na 5 posledních aktivit bez tlačítka více */}
           </div>
   </div>
   )}
