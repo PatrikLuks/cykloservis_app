@@ -191,6 +191,40 @@ Plánované rozšíření:
 - pHash pro detekci duplicitních obrázků
 - Periodický cleanup osiřelých souborů
 
+### Audit log & rotace
+
+Auditní log backendu (`backend/audit.log`) je append-only a před každým zápisem kontroluje velikost:
+
+Mechanika rotace:
+
+1. Před přidáním nové řádky se zjistí velikost aktuálního souboru.
+2. Pokud je velikost >= `AUDIT_LOG_MAX_BYTES`, provede se rotace: existující `audit.log.(n)` se posunou o +1 (např. `.2 -> .3`, `.1 -> .2`).
+3. Soubor `audit.log` se přejmenuje na `audit.log.1`.
+4. Nový záznam se zapíše do čerstvě vytvořeného nového `audit.log` (ten před zápisem neexistoval).
+
+Klíčové vlastnosti:
+
+- Rotace probíhá synchronně (blokující), aby se zamezilo závodům v test prostředí a na nízké zátěži.
+- Limity se čtou dynamicky z proměnných prostředí při každé kontrole (lze měnit bez restartu procesu, změna se projeví při dalším zápisu).
+- Výchozí hodnoty: `AUDIT_LOG_MAX_BYTES=200000`, `AUDIT_LOG_MAX_FILES=3` (výsledkem mohou být soubory `audit.log`, `.1`, `.2`, `.3`).
+- Při dosažení maximální hloubky (např. `.3`) se nejstarší soubor posune / přepíše podle řetězení rename operací (FIFO z pohledu zachování nejčerstvějších rotací).
+
+Proměnné prostředí pro audit log:
+
+| Proměnná              | Výchozí  | Popis                                            |
+| --------------------- | -------- | ------------------------------------------------ |
+| `AUDIT_LOG_MAX_BYTES` | `200000` | Limit velikosti (v bajtech) pro spuštění rotace. |
+| `AUDIT_LOG_MAX_FILES` | `3`      | Počet historických úrovní (bez aktuálního).      |
+
+Test pokrytí rotace: `backend/tests/auditLog.rotate.test.js` ověřuje scénář tří po sobě jdoucích zápisů (druhý překročí limit, třetí spustí rotaci před zápisem).
+
+Možná budoucí rozšíření:
+
+- Asynchronní varianta s lockem pro vysokou souběžnost.
+- Prometheus counter metrika např. `cyklo_audit_log_rotations_total`.
+- Komprese starších rotovaných souborů (gzip) při větších objemech.
+- Retenční politika (časové mazání starších než X dní vedle velikostního limitu).
+
 ---
 
 ## CI/CD a Docker stack v praxi
