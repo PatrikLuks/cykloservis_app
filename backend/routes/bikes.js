@@ -327,6 +327,7 @@ router.post(
       // Ověření magic bytes (nezávisle na deklarovaném mimetype)
       let detectedExt = 'bin';
       let detectedMime = req.file.mimetype;
+      const strictMagic = process.env.STRICT_UPLOAD_MAGIC === '1';
       try {
         const detected = await fileTypeFromBuffer(req.file.buffer);
         if (detected && detected.mime) {
@@ -337,9 +338,18 @@ router.post(
           }
           detectedMime = detected.mime;
           if (detected.ext) detectedExt = detected.ext;
-        } // pokud nedetekováno (null), fallback na deklarovaný mimetype – už byl propuštěn fileFilterem
+        } else if (strictMagic) {
+          return res
+            .status(400)
+            .json({ error: 'Neplatný obsah souboru', code: CODES.VALIDATION_ERROR });
+        }
       } catch (_) {
-        // fallback – pokud sniff selže, pokračujeme (mimetype už prošel fileFilter)
+        if (strictMagic) {
+          return res
+            .status(400)
+            .json({ error: 'Neplatný obsah souboru', code: CODES.VALIDATION_ERROR });
+        }
+        // non-strict: pokračujeme
       }
       // Mapování přípon (sjednocení .jpg/.jpeg)
       if (detectedExt === 'jpeg') detectedExt = 'jpg';
