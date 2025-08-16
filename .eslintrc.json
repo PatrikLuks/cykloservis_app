@@ -12,6 +12,7 @@
     "react/prop-types": "off",
     "react/react-in-jsx-scope": "off"
   },
+  "ignorePatterns": ["frontend/build/", "backend/coverage/", "coverage/"],
   "overrides": [
     {
       "files": ["frontend/src/**/*"],
