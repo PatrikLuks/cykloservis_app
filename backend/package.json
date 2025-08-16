@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-  "start": "node index.js",
-  "test": "jest",
-  "seed:bikes": "node scripts/seedBikes.js",
-  "purge:bikes": "node scripts/purgeDeletedBikes.js",
-  "migrate:bikes:ownerEmailLower": "node scripts/migrateOwnerEmailLower.js"
+    "start": "node index.js",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint . --ext .js --max-warnings=5",
+    "seed:bikes": "node scripts/seedBikes.js",
+    "purge:bikes": "node scripts/purgeDeletedBikes.js",
+    "migrate:bikes:ownerEmailLower": "node scripts/migrateOwnerEmailLower.js"
   },
   "keywords": [],
   "author": "",
@@ -20,13 +22,45 @@
     "express": "^5.1.0",
     "express-rate-limit": "^8.0.1",
     "express-validator": "^7.2.1",
+    "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.4",
-  "nodemailer": "^7.0.5",
-  "multer": "^1.4.5-lts.2"
+    "multer": "^1.4.5-lts.2",
+    "nodemailer": "^7.0.5",
+    "xss": "^1.0.15"
   },
   "devDependencies": {
+    "eslint": "^8.57.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-n": "^16.6.2",
+    "eslint-plugin-promise": "^6.4.0",
     "jest": "^30.0.5",
     "supertest": "^7.1.4"
+  },
+  "eslintConfig": {
+    "env": {
+      "node": true,
+      "es2022": true,
+      "jest": true
+    },
+    "extends": [
+      "eslint:recommended"
+    ],
+    "parserOptions": {
+      "ecmaVersion": 2022
+    },
+    "rules": {
+      "no-unused-vars": [
+        "warn",
+        {
+          "argsIgnorePattern": "^_"
+        }
+      ],
+      "no-console": "off",
+      "semi": "off",
+      "no-extra-semi": "off",
+      "no-empty": "off"
+    }
   }
 }

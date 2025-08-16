@@ -18,13 +18,26 @@ export default function MyBikes() {
   // Inline formulář byl nahrazen wizardem /add-bike
   const navigate = useNavigate();
 
-  async function refresh() {
+  const [page, setPage] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
+
+  async function refresh(reset=false) {
+    if (reset) {
+      setPage(1); setHasNext(false); setBikes([]);
+    }
     setLoading(true);
     try {
-      const data = await listBikes();
-      setBikes(Array.isArray(data) ? data : []);
-  // Deleted bikes no longer shown
+      const resp = await listBikes({ page: reset ? 1 : page, limit: 12 });
+      if (resp && resp.pagination) {
+        const merged = reset ? resp.data : [...bikes, ...resp.data];
+        setBikes(merged);
+        setHasNext(resp.pagination.hasNext);
+      } else if (Array.isArray(resp)) {
+        setBikes(resp);
+        setHasNext(false);
+      }
     } catch (e) {
+      if (reset) setBikes([]);
     } finally {
       setLoading(false);
     }
@@ -40,7 +53,7 @@ export default function MyBikes() {
       const payload = JSON.parse(atob(token.split('.')[1] || 'e30='));
       setIsAdmin(payload.role === 'admin');
     } catch {}
-    refresh();
+  refresh(true);
   }, [navigate]);
 
   // handleCreate odstraněn – nepotřebný
@@ -49,7 +62,7 @@ export default function MyBikes() {
     if (!window.confirm('Opravdu odebrat kolo?')) return;
     try {
       await deleteBike(id);
-      await refresh();
+  await refresh(true);
     } catch (e) {
       alert('Nepodařilo se odebrat kolo');
     }
@@ -58,7 +71,7 @@ export default function MyBikes() {
   const handleRestore = async (id) => {
     try {
       await restoreBike(id);
-      await refresh();
+  await refresh(true);
     } catch (e) {
       alert('Obnova selhala');
     }
@@ -68,7 +81,7 @@ export default function MyBikes() {
     if (!window.confirm('Trvale smazat kolo? Tuto akci nelze vrátit.')) return;
     try {
       await hardDeleteBike(id);
-      await refresh();
+  await refresh(true);
     } catch (e) {
       alert('Hard delete selhal (možná nemáte oprávnění).');
     }
@@ -91,15 +104,15 @@ export default function MyBikes() {
     <div className="mybikes-wrap">
       <div className="mybikes-surface">
         <header className="mybikes-header">
-          <h1 className="mybikes-title">Moje Kola</h1>
-          <button className="add-bike-pill" onClick={() => navigate('/add-bike')}>
-            <span className="add-bike-pill-icon">＋</span>
-            <span>Přidat kolo</span>
+          <h1 className="mybikes-title">Moje kola</h1>
+          <button className="btn-cta" style={{ width:'auto', whiteSpace:'nowrap' }} onClick={() => navigate('/add-bike')}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Přidat kolo
           </button>
         </header>
-        {loading ? (
+        {loading && bikes.length === 0 ? (
           <div className="mybikes-loading">Načítám…</div>
-  ) : (
+        ) : (
           <div className="mybikes-grid">
             {bikes.map(b => (
               <div className="bike-card" key={b._id}>
@@ -134,8 +147,15 @@ export default function MyBikes() {
                 </div>
               </div>
             ))}
-            {bikes.length === 0 && (
+            {bikes.length === 0 && !loading && (
               <div className="mybikes-empty">Zatím nemáte žádná kola. Přidejte první pomocí tlačítka nahoře vpravo.</div>
+            )}
+            {hasNext && (
+              <div style={{ gridColumn:'1 / -1', display:'flex', justifyContent:'center', marginTop:24 }}>
+                <button disabled={loading} onClick={()=> { setPage(p=>p+1); setTimeout(()=>refresh(false),0); }} className="add-bike-pill" style={{ fontSize:14, padding:'10px 20px' }}>
+                  {loading ? 'Načítám…' : 'Načíst další'}
+                </button>
+              </div>
             )}
           </div>
         )}

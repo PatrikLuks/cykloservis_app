@@ -198,6 +198,18 @@ Pro samostatné spuštění backendu nebo frontendu:
 ---
 
 ## Bezpečnost a údržba
+### Continuous Integration (CI)
+
+Repo obsahuje GitHub Actions workflow `ci.yml`:
+
+- Spuštění na push (větve: `main`, `master`, `kroupaadam`) a PR do `main`/`master`.
+- Job `backend-tests`: start MongoDB service (mongo:6), instalace závislostí backendu (`npm ci`), běh Jest testů `npm test -- --ci --runInBand`.
+- Job `frontend-build`: po úspěšných testech, instalace a build React frontendu (`npm run build`).
+- Cache Node modulů pro rychlejší pipeline.
+- Proměnné: `MONGO_URI_TEST`, `JWT_SECRET`, `LOG_LEVEL`.
+
+Rozšíření (další krok): přidat lint, coverage upload (Codecov) a build artefakty (např. production build jako artifact).
+
 
 - Pravidelně spouštějte `npm audit` a sledujte badge v README.
 - Docker image backendu je optimalizován: obsahuje pouze production závislosti, devDependencies a testy nejsou součástí výsledného image.

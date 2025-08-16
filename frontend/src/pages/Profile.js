@@ -168,22 +168,21 @@ export default function Profile() {
 
   return (
     <div style={{ display: 'grid', gap: 24 }}>
-      <div className="ds-card" style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-        <div style={{ position:'relative', width:90, height:90 }}>
+      {/* Unified header block styled like dashboard user chip */}
+      <div className="ds-card" style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:28, padding:'22px 28px' }}>
+        <div className="topbar-profile" style={{ background:'transparent', boxShadow:'none', border:'none', padding:0, gap:14 }}>
+          <div style={{ position:'relative', width:72, height:72 }}>
           <input id="user-avatar-input" type="file" accept="image/*" style={{ display:'none' }} onChange={handleAvatarSelect} />
           <button type="button" onClick={()=>{ setAvatarError(''); setAvatarMenuOpen(true); }} style={{
-            width:'100%', height:'100%', background:'#eff2ff', border:'1px solid #eff2ff', borderRadius:24, cursor:'pointer', padding:0, position:'relative', display:'flex', alignItems:'center', justifyContent:'center', overflow:'visible'
+            width:'100%', height:'100%', background:'#eff2ff', border:'1px solid #eff2ff', borderRadius:20, cursor:'pointer', padding:0, position:'relative', display:'flex', alignItems:'center', justifyContent:'center', overflow:'visible'
           }} aria-label="Akce avatar">
             {user.avatarUrl ? (
-              <img src={user.avatarUrl} alt="avatar" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', borderRadius:24 }} onError={(ev)=>{ ev.currentTarget.style.display='none'; /* fallback show initial */ }} />
+              <img src={user.avatarUrl} alt="avatar" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} onError={(ev)=>{ ev.currentTarget.style.display='none'; }} />
             ) : (
-              <span style={{ fontSize:34, fontWeight:800, color:'var(--ds-primary, #394ff7)' }}>{initial}</span>
+              <span style={{ fontSize:30, fontWeight:800, color:'var(--ds-primary, #394ff7)' }}>{initial}</span>
             )}
-            {!user.avatarUrl && (
-              <></>
-            )}
-            <span style={{ position:'absolute', right:0, bottom:0, width:24, height:24, borderRadius:'50%', background:'#000', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 2px 6px -2px rgba(0,0,0,0.45)' }}>
-              <img src={addIcon} alt="Přidat" style={{ width:20, height:20, display:'block' }} />
+            <span style={{ position:'absolute', right:-4, bottom:-4, width:28, height:28, borderRadius:'50%', background:'#000', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 2px 6px -2px rgba(0,0,0,0.45)' }}>
+              <img src={addIcon} alt="Přidat" style={{ width:18, height:18, display:'block' }} />
             </span>
             {uploading && <span style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.45)', color:'#fff', fontSize:12, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:600 }}>...</span>}
           </button>
@@ -216,18 +215,19 @@ export default function Profile() {
               {avatarError && <div style={{ fontSize:11, color:'#b42318', lineHeight:1.3 }}>{avatarError}</div>}
             </div>
           )}
-        </div>
-        <div style={{ display:'grid', gap:4 }}>
-          <div style={{ fontSize: 26, fontWeight: 800 }}>{user.fullName || 'Uživatel'}</div>
-          <div className="muted" style={{ fontSize: 14 }}>{user.email || '—'}</div>
-          {(user.location || user.registeredAt) && (
-            <div style={{ fontSize:13, color:'#475467', display:'flex', gap:12, flexWrap:'wrap' }}>
-              {user.location && <span>{user.location}</span>}
-              {user.registeredAt && (
-                <span style={{ color:'#667085' }}>Členem od {new Date(user.registeredAt).toLocaleDateString('cs-CZ')}</span>
-              )}
-            </div>
-          )}
+          </div>
+          <div className="topbar-profile-text" style={{ lineHeight:1.2 }}>
+            <div className="topbar-name" style={{ fontSize:20 }}>{user.fullName || 'Uživatel'}</div>
+            <div className="topbar-email" style={{ fontSize:13 }}>{user.email || '—'}</div>
+            {(user.location || user.registeredAt) && (
+              <div style={{ fontSize:12, color:'#64748b', display:'flex', gap:12, flexWrap:'wrap', marginTop:6 }}>
+                {user.location && <span>{user.location}</span>}
+                {user.registeredAt && (
+                  <span style={{ color:'#667085' }}>Členem od {new Date(user.registeredAt).toLocaleDateString('cs-CZ')}</span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

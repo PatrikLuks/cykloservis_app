@@ -17,6 +17,16 @@ const BikeSchema = new mongoose.Schema({
   suspensionType: { type: String, trim: true }, // Typ Odpružení
   specs: { type: String, trim: true }, // Specifikace
   deletedAt: { type: Date } // soft delete
+  ,
+  components: [{
+    name: { type: String, trim: true },
+    installedAtMinutes: { type: Number, default: 0 }, // minutesRidden value when (re)installed
+    installedAt: { type: Date, default: Date.now },
+    history: [{
+      replacedAt: { type: Date },
+      minutesRidden: { type: Number }
+    }]
+  }]
 }, { timestamps: true });
 
 // Kompozitní index pro časté listování (uživatel + čas vytvoření)

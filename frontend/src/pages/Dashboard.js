@@ -1,21 +1,25 @@
-import { fetchWeatherByCoords } from '../utils/weatherApi';
-import StatCard from '../components/StatCard';
-import { useDashboardData } from '../hooks/useDashboardData';
-import WeatherCard from '../components/WeatherCard';
-import ShowroomBike from '../img/showroomBike.png';
-import { listBikes } from '../utils/bikesApi';
-import React, { useState, useEffect } from 'react';
-import api from '../utils/apiClient';
-import AdminPanel from './AdminPanel';
-import { useSearchParams } from 'react-router-dom';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import '../App.css';
 import './DashboardCustom.css';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ReactComponent as ArrowBackIcon } from '../img/arrow-icon-back.svg';
 import { ReactComponent as ActivityIcon } from '../img/icons/activity.svg';
+import ShowroomBike from '../img/showroomBike.png';
+import { fetchWeatherByCoords } from '../utils/weatherApi';
+import { listBikes } from '../utils/bikesApi';
+import { useDashboardData } from '../hooks/useDashboardData';
+import StatCard from '../components/StatCard';
+import api from '../utils/apiClient';
+import { getProfileSync, ensureProfile, subscribe } from '../utils/userProfileStore';
 import { fetchRecentActivity } from '../utils/activityApi';
 import { listServiceRequests } from '../utils/serviceRequestsApi';
+import { prefetchCommon } from '../utils/prefetch';
+const AdminPanel = lazy(() => import('./AdminPanel'));
+const LazyWeatherCard = lazy(() => import('../components/WeatherCard'));
 
+// Lazy modules loaded only when admin tab or when weather available
+
+// (React import moved up)
 
 function getInitialUserInfo(){
   let name = 'Uživatel';
@@ -53,10 +57,11 @@ const Dashboard = () => {
   const { loading: dashLoading, stats } = useDashboardData();
   const [searchParams] = useSearchParams();
   const tab = searchParams.get('tab') || 'overview';
-  const initialUser = getInitialUserInfo();
-  const [userName, setUserName] = useState(initialUser.name);
-  const [userEmail, setUserEmail] = useState(initialUser.email);
-  const [avatarInitial, setAvatarInitial] = useState(initialUser.initial);
+  const initialUser = getProfileSync() || getInitialUserInfo();
+  const baseName = (initialUser.displayName || initialUser.fullName || initialUser.name || '').split(' ')[0] || (initialUser.name || 'Uživatel');
+  const [userName, setUserName] = useState(baseName);
+  const [userEmail, setUserEmail] = useState(initialUser.email || 'user@example.com');
+  const [avatarInitial, setAvatarInitial] = useState((baseName.trim()[0] || (initialUser.email||'U')[0] || 'U').toUpperCase());
   const [firstBike, setFirstBike] = useState(null);
   const [bikesLoading, setBikesLoading] = useState(true);
   const [activity, setActivity] = useState([]);
@@ -65,36 +70,16 @@ const Dashboard = () => {
   const [requestsLoading, setRequestsLoading] = useState(true);
 
   useEffect(() => {
-    // Prefer fetching real user from API; fallback to JWT
-    const load = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-        const { data } = await api.get('/auth/me');
-  const fullName = data.displayName || data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim();
-  const firstOnly = (data.firstName || (fullName || '').split(' ')[0] || '').trim();
-  const name = firstOnly || fullName || 'Uživatel';
-        const email = data.email || 'user@example.com';
-        setUserName(name);
-        setUserEmail(email);
-        const initial = (name && name.trim()[0]) || (email && email.trim()[0]) || 'U';
-        setAvatarInitial(String(initial).toUpperCase());
-      } catch (e) {
-        try {
-          const token = localStorage.getItem('token');
-          if (!token) return;
-          const payload = JSON.parse(atob(token.split('.')[1] || 'e30='));
-          const firstOnly = payload.firstName || (payload.name || payload.fullName || '').split(' ')[0] || '';
-          const name = (firstOnly || 'Uživatel').trim();
-          const email = payload.email || 'user@example.com';
-          setUserName(name);
-          setUserEmail(email);
-          const initial = (name && name.trim()[0]) || (email && email.trim()[0]) || 'U';
-          setAvatarInitial(String(initial).toUpperCase());
-        } catch {}
-      }
-    };
-    load();
+    const unsub = subscribe(p => {
+      const full = p.displayName || p.fullName || `${p.firstName || ''} ${p.lastName || ''}`.trim();
+      const first = p.firstName || (full.split(' ')[0] || '');
+      const nm = (first || full || 'Uživatel').trim();
+      setUserName(nm);
+      if (p.email) setUserEmail(p.email);
+      setAvatarInitial((nm[0] || 'U').toUpperCase());
+    });
+    ensureProfile(api);
+    return () => unsub();
   }, []);
 
   // Load recent activity (bike create/delete)
@@ -153,6 +138,8 @@ const Dashboard = () => {
       setForecastLoading(false);
       return;
     }
+  // Kick off prefetch of common secondary routes once dashboard logic starts
+  prefetchCommon();
     navigator.geolocation.getCurrentPosition(
       async pos => {
         try {
@@ -188,7 +175,9 @@ const Dashboard = () => {
       <section className="dashboard-content">
         {tab === 'admin' ? (
           <div style={{ background:'#fff', borderRadius:40, padding:'32px 40px', boxShadow:'0 8px 32px -8px rgba(16,24,40,0.12)' }}>
-            <AdminPanel />
+            <Suspense fallback={<div style={{padding:16,fontSize:13}}>Načítám admin modul…</div>}>
+              <AdminPanel />
+            </Suspense>
           </div>
         ) : (
         <div className="dashboard-grid">
@@ -225,7 +214,7 @@ const Dashboard = () => {
                     <Link to="/add-bike" style={{ width:'100%', textDecoration:'none' }}>
                       <button className="btn-cta" style={{ width:'100%', justifyContent:'space-between', display:'flex', alignItems:'center', background:'#394ff7', color:'#fff' }}>
                         <span>Přidat první kolo</span>
-                        <ArrowBackIcon class="basic-icons" width={20} height={20} style={{ transform:'rotate(180deg)' }} />
+                        <ArrowBackIcon className="basic-icons" width={20} height={20} style={{ transform:'rotate(180deg)' }} />
                       </button>
                     </Link>
                   </div>
@@ -249,13 +238,13 @@ const Dashboard = () => {
                     </div>
                   </div>
                   <div style={{ width:'100%', display:'flex', justifyContent:'center', padding:'10px 0 0' }}>
-                    <img src={firstBike.imageUrl || ShowroomBike} alt={firstBike.title} style={{ maxWidth:'100%', maxHeight:220, objectFit:'contain', filter:'drop-shadow(0 8px 28px rgba(0,0,0,.25))' }} onError={(e)=>{ e.currentTarget.src=ShowroomBike; }} />
+                    <img loading="lazy" src={firstBike.imageUrl || ShowroomBike} alt={firstBike.title} style={{ maxWidth:'100%', maxHeight:220, objectFit:'contain', filter:'drop-shadow(0 8px 28px rgba(0,0,0,.25))' }} onError={(e)=>{ e.currentTarget.src=ShowroomBike; }} />
                   </div>
                   <div style={{ marginTop:'auto', width:'100%' }}>
                     <Link to="/my-bikes" style={{ textDecoration:'none' }}>
                       <button className="btn-cta" style={{ width:'100%', justifyContent:'space-between', display:'flex', alignItems:'center', background:'#394ff7', color:'#fff' }}>
                         <span>Spravovat kola</span>
-                        <ArrowBackIcon class="basic-icons" width={20} height={20} style={{ transform:'rotate(180deg)'}} />
+                        <ArrowBackIcon className="basic-icons" width={20} height={20} style={{ transform:'rotate(180deg)'}} />
                       </button>
                     </Link>
                   </div>
@@ -322,7 +311,8 @@ const Dashboard = () => {
           {/* Right side weather + messages */}
           <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
             <div style={{ position:'relative' }}>
-              <WeatherCard
+              <Suspense fallback={<div className="ds-card" style={{padding:16}}>Načítám počasí modul…</div>}>
+              <LazyWeatherCard
                 weather={weather}
                 weatherLoading={weatherLoading}
                 weatherError={weatherError}
@@ -330,6 +320,7 @@ const Dashboard = () => {
                 forecastLoading={forecastLoading}
                 forecastError={forecastError}
               />
+              </Suspense>
             </div>
             <div className="ds-card" style={{ minHeight:220 }}>
               <h3 style={{ margin:'0 0 18px', fontSize:24, }}>Zprávy</h3>

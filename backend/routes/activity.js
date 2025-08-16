@@ -22,9 +22,23 @@ router.get('/', requireAuth, async (req, res) => {
     // Filter for current user + relevant bike actions
     const relevant = cache.data.filter(e => e.userEmail === req.user.email && ['bike_create','bike_soft_delete','bike_restore','bike_hard_delete'].includes(e.action));
     // Map to display format
-  const rawLimit = parseInt(req.query.limit, 10);
-  const limit = (!isNaN(rawLimit) && rawLimit > 0 && rawLimit <= 50) ? rawLimit : 25;
-  const items = relevant.sort((a,b)=> new Date(b.timestamp)-new Date(a.timestamp)).slice(0, limit).map(e => ({
+    const sorted = relevant.sort((a,b)=> new Date(b.timestamp)-new Date(a.timestamp));
+    const rawLimit = parseInt(req.query.limit, 10);
+    const limit = (!isNaN(rawLimit) && rawLimit > 0 && rawLimit <= 50) ? rawLimit : 25;
+    const page = parseInt(req.query.page, 10);
+    if (!isNaN(page) && page > 0) {
+      const skip = (page - 1) * limit;
+      const slice = sorted.slice(skip, skip + limit + 1);
+      const hasNext = slice.length > limit;
+      const data = (hasNext ? slice.slice(0, limit) : slice).map(e => ({
+        id: e.details && e.details.bikeId || e.timestamp,
+        action: e.action,
+        date: e.timestamp,
+        details: e.details || {}
+      }));
+      return res.json({ data, pagination: { page, limit, hasNext } });
+    }
+    const items = sorted.slice(0, limit).map(e => ({
       id: e.details && e.details.bikeId || e.timestamp,
       action: e.action,
       date: e.timestamp,

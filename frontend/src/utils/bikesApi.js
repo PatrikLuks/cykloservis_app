@@ -1,8 +1,12 @@
 import api from './apiClient';
 
 // Základní skeleton pro budoucí CRUD kol
-export async function listBikes() {
-	const { data } = await api.get('/bikes');
+export async function listBikes({ page, limit } = {}) {
+	const params = [];
+	if (limit) params.push(`limit=${limit}`);
+	if (page) params.push(`page=${page}`);
+	const qs = params.length ? `?${params.join('&')}` : '';
+	const { data } = await api.get(`/bikes${qs}`);
 	return data;
 }
 

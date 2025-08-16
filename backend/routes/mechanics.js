@@ -10,6 +10,8 @@ const User = require('../models/User');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
+const auditLog = require('../utils/auditLog');
 
 const SERVICE_TYPES = ['servis','reklamace','odpruzeni'];
 
@@ -99,13 +101,15 @@ router.get('/service-types/list', requireAuth, (req, res) => {
 });
 
 // Upgrade current user to mechanic (idempotent)
-router.post('/self/upgrade', requireAuth, async (req, res) => {
+const upgradeLimiter = rateLimit({ windowMs: 15*60*1000, max: 10, standardHeaders:true, legacyHeaders:false });
+router.post('/self/upgrade', requireAuth, upgradeLimiter, async (req, res) => {
 	try {
 		const user = await User.findById(req.user.id);
 		if (!user) return res.status(404).json({ error: 'User not found' });
 		if (user.role !== 'mechanic') {
 			user.role = 'mechanic';
 			await user.save();
+	auditLog('mechanic_upgrade', req.user.email, { userId: user._id });
 		}
 		// Ensure a mechanic profile exists
 		let profile = await MechanicProfile.findOne({ userId: user._id });
@@ -128,7 +132,8 @@ router.get('/self', requireAuth, async (req, res) => {
 });
 
 // Update own mechanic profile
-router.put('/self', requireAuth, [
+const selfUpdateLimiter = rateLimit({ windowMs: 10*60*1000, max: 60, standardHeaders:true, legacyHeaders:false });
+router.put('/self', requireAuth, selfUpdateLimiter, [
 	body('skills').optional().isArray(),
 	body('skills.*').optional().isIn(SERVICE_TYPES),
 	body('availableSlots').optional().isArray(),
@@ -147,7 +152,7 @@ router.put('/self', requireAuth, [
 	try {
 		let profile = await MechanicProfile.findOne({ userId: req.user.id });
 		if (!profile) return res.status(404).json({ error: 'Profile not found' });
-		const { skills, availableSlots, note, active, avatarUrl, firstName, lastName, phoneCountryCode, phoneNumber, address, email } = req.body;
+		const { skills, availableSlots, note, active, avatarUrl, firstName, lastName, phoneCountryCode, phoneNumber, address } = req.body; // email změnu nepovolujeme nyní
 		if (skills) profile.skills = skills;
 		if (availableSlots) profile.availableSlots = availableSlots.map(d => new Date(d));
 		if (note !== undefined) profile.note = note;
@@ -161,10 +166,7 @@ router.put('/self', requireAuth, [
 			if (phoneCountryCode !== undefined) user.phoneCountryCode = phoneCountryCode;
 			if (phoneNumber !== undefined) user.phoneNumber = phoneNumber;
 			if (address !== undefined) user.location = address; // reuse existing location field
-			if (email && email.toLowerCase() !== user.email.toLowerCase()) {
-				// optional: allow email change (basic) - could add verification flow later
-				user.email = email.toLowerCase();
-			}
+			// Email change disabled until verification flow implemented
 			await user.save();
 		}
 		await profile.save();

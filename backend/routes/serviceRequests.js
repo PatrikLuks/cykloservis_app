@@ -2,8 +2,12 @@ const express = require('express');
 const router = express.Router();
 const { body, param, validationResult } = require('express-validator');
 const { requireAuth } = require('../middleware/auth');
+const bodyWhitelist = require('../middleware/bodyWhitelist');
+const logger = require('../utils/logger');
 const ServiceRequest = require('../models/ServiceRequest');
 const MechanicProfile = require('../models/MechanicProfile');
+const ServiceCatalogItem = require('../models/ServiceCatalogItem');
+const ServiceRequestMessage = require('../models/ServiceRequestMessage');
 
 function validate(req, res) {
   const errors = validationResult(req);
@@ -17,7 +21,27 @@ function validate(req, res) {
 // List my requests
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const items = await ServiceRequest.find({ ownerEmail: req.user.email }).sort({ createdAt: -1 });
+    const rawLimit = parseInt(req.query.limit, 10);
+    const limit = (!isNaN(rawLimit) && rawLimit > 0 && rawLimit <= 100) ? rawLimit : 50;
+    const page = parseInt(req.query.page, 10);
+    const projection = 'title status assignedDate preferredDate priceEstimate createdAt mechanicId bikeId';
+    if (!isNaN(page) && page > 0) {
+      const skip = (page - 1) * limit;
+      const docs = await ServiceRequest.find({ ownerEmail: req.user.email })
+        .select(projection)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit + 1)
+        .lean();
+      const hasNext = docs.length > limit;
+      const data = hasNext ? docs.slice(0, limit) : docs;
+      return res.json({ data, pagination: { page, limit, hasNext } });
+    }
+    const items = await ServiceRequest.find({ ownerEmail: req.user.email })
+      .select(projection)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
     res.json(items);
   } catch (e) {
     res.status(500).json({ error: 'Server error' });
@@ -27,6 +51,7 @@ router.get('/', requireAuth, async (req, res) => {
 // Create
 router.post('/',
   requireAuth,
+  bodyWhitelist(['title','bikeId','mechanicId','serviceTypes','deferredBike','preferredDate','firstAvailable','description','priceEstimate'], { logFn: (removed)=> logger.warn('SR_CREATE_STRIPPED_KEYS', { removed }) }),
   [
     body('title').notEmpty(),
     body('bikeId').optional().isMongoId(),
@@ -115,7 +140,7 @@ router.post('/',
 router.put('/:id/status', requireAuth, [
   param('id').isMongoId(),
   body('status').isIn(['new','in_progress','done','cancelled'])
-], async (req, res) => {
+], bodyWhitelist(['status'], { logFn: (removed, _allowed, reqCtx)=> logger.warn('SR_STATUS_STRIPPED_KEYS', { removed, id: reqCtx.params.id }) }), async (req, res) => {
   if (!validate(req, res)) return;
   try {
   const reqDoc = await ServiceRequest.findOne({ _id: req.params.id, ownerEmail: req.user.email });

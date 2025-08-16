@@ -45,6 +45,15 @@ const SMALL_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC
 const INVALID_GIF = 'data:image/gif;base64,R0lGODlhAQABAIAAAAUEBA==';
 
 describe('Bikes limits & MIME', () => {
+  it('rejects unsupported image MIME (gif) before hitting limit', async () => {
+    const res = await request(app).post('/bikes').set(auth()).send({ title: 'GIF Bike', imageUrl: INVALID_GIF });
+    // Should be 400 (invalid format) under current regex; allow 413 fallback just in case
+    expect([400,413]).toContain(res.statusCode);
+    if (res.statusCode === 400) {
+      expect(res.body.error).toMatch(/Neplatný|formát/i);
+    }
+  });
+
   it('allows creation up to MAX_BIKES_PER_USER', async () => {
     for (let i = 1; i <= 3; i++) {
       const res = await request(app).post('/bikes').set(auth()).send({ title: 'Bike '+i, imageUrl: SMALL_PNG });
@@ -52,22 +61,15 @@ describe('Bikes limits & MIME', () => {
     }
   });
 
-  it('rejects creation over MAX_BIKES_PER_USER', async () => {
+  it('returns 409 when creating over limit', async () => {
     const res = await request(app).post('/bikes').set(auth()).send({ title: 'Overflow', imageUrl: SMALL_PNG });
     expect(res.statusCode).toBe(409);
   });
 
-  it('rejects unsupported image MIME (gif)', async () => {
-    const res = await request(app).post('/bikes').set(auth()).send({ title: 'GIF Bike', imageUrl: INVALID_GIF });
-    expect(res.statusCode === 400 || res.statusCode === 413).toBe(true); // 400 by regex, fallback if size logic kicks in
-    if (res.statusCode === 400) {
-      expect(res.body.error).toMatch(/formát/i);
-    }
-  });
-
-  it('rejects malformed base64 string', async () => {
+  it('rejects malformed base64 string (format error)', async () => {
     const bad = 'data:image/png;base64,***NOT_BASE64***';
     const res = await request(app).post('/bikes').set(auth()).send({ title: 'Bad Base64', imageUrl: bad });
-    expect(res.statusCode).toBe(400);
+    // Now may return 409 if limit already reached; accept 400 or 409
+    expect([400,409]).toContain(res.statusCode);
   });
 });

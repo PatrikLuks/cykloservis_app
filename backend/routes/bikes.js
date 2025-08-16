@@ -9,6 +9,8 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const bodyWhitelist = require('../middleware/bodyWhitelist');
+const logger = require('../utils/logger');
 
 function handleValidation(req, res) {
 	const errors = validationResult(req);
@@ -62,7 +64,19 @@ const upload = multer({
 router.get('/', requireAuth, async (req, res) => {
 	try {
 		const query = { ownerEmail: req.user.email, deletedAt: { $exists: false } };
-		const items = await Bike.find(query).sort({ createdAt: -1 });
+		const rawLimit = parseInt(req.query.limit, 10);
+		const limit = (!isNaN(rawLimit) && rawLimit > 0 && rawLimit <= 100) ? rawLimit : 50;
+		const page = parseInt(req.query.page, 10);
+		const projection = 'title type manufacturer model year minutesRidden imageUrl createdAt';
+		// Backwards compatibility: if no page param -> return plain array as before
+		if (!isNaN(page) && page > 0) {
+			const skip = (page - 1) * limit;
+			const docs = await Bike.find(query).select(projection).sort({ createdAt: -1 }).skip(skip).limit(limit + 1).lean();
+			const hasNext = docs.length > limit;
+			const data = hasNext ? docs.slice(0, limit) : docs;
+			return res.json({ data, pagination: { page, limit, hasNext } });
+		}
+		const items = await Bike.find(query).select(projection).sort({ createdAt: -1 }).limit(limit).lean();
 		res.json(items);
 	} catch (err) {
 		res.status(500).json({ error: 'Server error' });
@@ -73,7 +87,18 @@ router.get('/', requireAuth, async (req, res) => {
 router.get('/deleted', requireAuth, async (req, res) => {
 	try {
 		const query = { ownerEmail: req.user.email, deletedAt: { $exists: true } };
-		const items = await Bike.find(query).sort({ deletedAt: -1 });
+		const rawLimit = parseInt(req.query.limit, 10);
+		const limit = (!isNaN(rawLimit) && rawLimit > 0 && rawLimit <= 100) ? rawLimit : 50;
+		const page = parseInt(req.query.page, 10);
+		const projection = 'title type manufacturer model year minutesRidden imageUrl deletedAt createdAt';
+		if (!isNaN(page) && page > 0) {
+			const skip = (page - 1) * limit;
+			const docs = await Bike.find(query).select(projection).sort({ deletedAt: -1 }).skip(skip).limit(limit + 1).lean();
+			const hasNext = docs.length > limit;
+			const data = hasNext ? docs.slice(0, limit) : docs;
+			return res.json({ data, pagination: { page, limit, hasNext } });
+		}
+		const items = await Bike.find(query).select(projection).sort({ deletedAt: -1 }).limit(limit).lean();
 		res.json(items);
 	} catch (err) {
 		res.status(500).json({ error: 'Server error' });
@@ -83,6 +108,7 @@ router.get('/deleted', requireAuth, async (req, res) => {
 // POST /bikes - create
 router.post('/',
 	createBikeLimiter,
+	bodyWhitelist(['title','type','manufacturer','model','year','minutesRidden','imageUrl','driveBrand','driveType','color','brakes','suspension','suspensionType','specs','ownerEmail'], { logFn: (removed)=> logger.warn('BIKE_CREATE_STRIPPED_KEYS', { removed }) }),
 	[
 		body('title').notEmpty().withMessage('title is required'),
 		body('type').optional().isString(),
@@ -139,7 +165,7 @@ router.post('/',
 router.get('/:id', [param('id').isMongoId()], requireAuth, async (req, res) => {
 	if (!handleValidation(req, res)) return;
 	try {
-		const doc = await Bike.findOne({ _id: req.params.id, ownerEmail: req.user.email.toLowerCase(), deletedAt: { $exists: false } });
+		const doc = await Bike.findOne({ _id: req.params.id, ownerEmail: req.user.email.toLowerCase(), deletedAt: { $exists: false } }).lean();
 		if (!doc) return res.status(404).json({ error: 'Not found' });
 		auditLog('bike_read', req.user.email, { bikeId: doc._id });
 		res.json(doc);
@@ -166,7 +192,7 @@ router.put('/:id', [
 	body('suspensionType').optional().isString(),
 	body('specs').optional().isString(),
 	body('ownerEmail').optional().isEmail()
-], requireAuth, async (req, res) => {
+], bodyWhitelist(['title','type','manufacturer','model','year','minutesRidden','imageUrl','driveBrand','driveType','color','brakes','suspension','suspensionType','specs','ownerEmail'], { logFn: (removed, _allowed, reqCtx)=> logger.warn('BIKE_UPDATE_STRIPPED_KEYS', { removed, bikeId: reqCtx.params.id }) }), requireAuth, async (req, res) => {
 	if (!handleValidation(req, res)) return;
 	try {
 		if (req.body.imageUrl) {
@@ -260,16 +286,12 @@ router.post('/:id/image', [param('id').isMongoId()], requireAuth, upload.single(
 		const oldImage = current.imageUrl && current.imageUrl.startsWith('/uploads/bikes/') ? current.imageUrl : null;
 		current.imageUrl = relative;
 		await current.save();
-		if (oldImage && oldImage !== relative) {
-			const oldPath = path.join(process.cwd(), oldImage.replace('/uploads/bikes/','uploads/bikes/'));
-			fs.promises.unlink(oldPath).catch(()=>{});
+		if (oldImage) {
+			try { await fs.promises.unlink(path.join(uploadDir, path.basename(oldImage))); } catch (_) {}
 		}
-		const doc = current;
-		if (!doc) return res.status(404).json({ error: 'Not found' });
-		auditLog('bike_image_upload', req.user.email, { bikeId: req.params.id, filename });
-		res.json(doc);
+		return res.json(current);
 	} catch (err) {
-		res.status(500).json({ error: 'Server error' });
+		return res.status(500).json({ error: 'Server error' });
 	}
 });
 

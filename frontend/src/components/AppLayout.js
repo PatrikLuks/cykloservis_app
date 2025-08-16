@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { ReactComponent as Logo } from '../img/BIKESERVIS.svg';
 import '../App.css';
@@ -15,6 +15,7 @@ import { ReactComponent as LoyaltyIcon } from '../img/Sidebar/loyalty.svg';
 import { ReactComponent as DashboardIcon } from '../img/Sidebar/dashboard.svg';
 import { ReactComponent as ChatIcon } from '../img/Sidebar/chat.svg';
 import api from '../utils/apiClient';
+import { getProfileSync, ensureProfile, subscribe } from '../utils/userProfileStore';
 
 const Icon = ({ name }) => {
   const common = { width: 22, height: 22, fill: 'currentColor' };
@@ -78,68 +79,32 @@ export default function AppLayout() {
   // Cache to avoid flicker when navigating fast
   // Inicializace okamžitě z JWT (žádné čekání na async) + případná cache
   useEffect(() => {
-    let initialized = false;
-    try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        const payload = JSON.parse(atob(token.split('.')[1] || 'e30='));
-        if (payload) {
-          if (payload.email) setUserEmail(payload.email);
-          if (payload.displayName) setUserName(payload.displayName);
-          if (payload.avatarUrl) {
-            const v = /^https?:/i.test(payload.avatarUrl) ? payload.avatarUrl : (api.defaults.baseURL?.replace(/\/$/, '') || '') + payload.avatarUrl;
-            setAvatarUrl(v);
-          }
-          setIsAdmin(payload.role === 'admin');
-          initialized = true;
-        }
+    const p = getProfileSync();
+    if (p) {
+      if (p.email) setUserEmail(p.email);
+      if (p.displayName || p.fullName) setUserName(p.displayName || p.fullName);
+      if (p.role) setIsAdmin(p.role === 'admin');
+      if (p.avatarUrl) {
+        const v = /^https?:/i.test(p.avatarUrl) ? p.avatarUrl : (api.defaults.baseURL?.replace(/\/$/, '') || '') + p.avatarUrl;
+        setAvatarUrl(v);
       }
-    } catch {}
-    if (!initialized) {
-      try {
-        const cached = JSON.parse(localStorage.getItem('userProfileCache') || 'null');
-        if (cached && cached.email) {
-          setUserEmail(cached.email);
-          setUserName(cached.displayName || cached.fullName || cached.firstName || '');
-          setIsAdmin(cached.role === 'admin');
-          if (cached.avatarUrl) {
-            const v = /^https?:/i.test(cached.avatarUrl) ? cached.avatarUrl : (api.defaults.baseURL?.replace(/\/$/, '') || '') + cached.avatarUrl;
-            setAvatarUrl(v);
-          }
-        }
-      } catch {}
     }
+    const unsub = subscribe(np => {
+      if (np.email) setUserEmail(np.email);
+      if (np.displayName || np.fullName) setUserName(np.displayName || np.fullName);
+      if (np.role) setIsAdmin(np.role === 'admin');
+      if (np.avatarUrl) {
+        const v = /^https?:/i.test(np.avatarUrl) ? np.avatarUrl : (api.defaults.baseURL?.replace(/\/$/, '') || '') + np.avatarUrl;
+        setAvatarUrl(v);
+      }
+    });
+    // Kick async refresh (non-blocking)
+    ensureProfile(api);
+    return () => unsub();
   }, []);
   useEffect(() => {
-    const run = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-        const { data } = await api.get('/auth/me');
-        setIsAdmin((data.role || 'user') === 'admin');
-  if (data.email) setUserEmail(data.email);
-        const name = data.displayName || data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim();
-        if (name) setUserName(name);
-        if (data.avatarUrl) {
-          const v = /^https?:/i.test(data.avatarUrl) ? data.avatarUrl : (api.defaults.baseURL?.replace(/\/$/, '') || '') + data.avatarUrl;
-          setAvatarUrl(v);
-        }
-        try { localStorage.setItem('userProfileCache', JSON.stringify(data)); } catch {}
-      } catch (e) {
-        // fallback to decoding token if API not available
-        try {
-          const payload = JSON.parse(atob((localStorage.getItem('token') || '').split('.')[1] || 'e30='));
-          setIsAdmin(payload.role === 'admin');
-          if (payload.email) setUserEmail(payload.email);
-          if (payload.name || payload.fullName) setUserName(payload.name || payload.fullName);
-          if (payload.avatarUrl) {
-            const v = /^https?:/i.test(payload.avatarUrl) ? payload.avatarUrl : (api.defaults.baseURL?.replace(/\/$/, '') || '') + payload.avatarUrl;
-            setAvatarUrl(v);
-          }
-        } catch {}
-      }
-    };
-    run();
+  // On route change, ensure profile refresh (debounced by TTL in store)
+  ensureProfile(api);
   }, [location.pathname]);
 
   // Realtime avatar update from profile upload
@@ -165,9 +130,20 @@ export default function AppLayout() {
     return current === query;
   };
 
+  const handleSkip = useCallback((e) => {
+    e.preventDefault();
+    const main = document.getElementById('main-content');
+    if (main) {
+      main.setAttribute('tabIndex', '-1');
+      main.focus();
+      setTimeout(()=> main.removeAttribute('tabIndex'), 1000);
+    }
+  }, []);
+
   return (
     <div className="dashboard-root">
-      <aside className="dashboard-sidemenu">
+      <a href="#main-content" onClick={handleSkip} className="skip-link">Přeskočit na obsah</a>
+      <aside className="dashboard-sidemenu" role="navigation" aria-label="Postranní navigace">
         <div className="dashboard-logo-container">
           <Link to="/dashboard">
             <Logo className="dashboard-logo" />
@@ -229,7 +205,7 @@ export default function AppLayout() {
           })}
         </nav>
       </aside>
-      <div className="dashboard-main">
+  <div className="dashboard-main" role="main" id="main-content">
         {(() => {
           const path = location.pathname || '';
           const pageTitle = (() => {
@@ -266,9 +242,9 @@ export default function AppLayout() {
                   <BellIcon width={18} height={18} />
                 </button>
                 <Link to="/profile" className="topbar-profile" aria-label="Profil uživatele">
-          <div className="topbar-avatar" aria-hidden="true" style={avatarUrl ? { padding:0, overflow:'hidden', borderRadius:12 } : undefined}>
+                  <div className="topbar-avatar" aria-hidden="true" style={avatarUrl ? { padding:0, overflow:'visible', borderRadius:12 } : undefined}>
                     {avatarUrl ? (
-            <img src={avatarUrl.startsWith('http') ? avatarUrl : (api.defaults.baseURL?.replace(/\/$/, '') || '') + avatarUrl} alt="avatar" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', borderRadius:12 }} onError={(ev)=>{ ev.currentTarget.style.display='none'; }} />
+                      <img src={avatarUrl.startsWith('http') ? avatarUrl : (api.defaults.baseURL?.replace(/\/$/, '') || '') + avatarUrl} alt="avatar" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', borderRadius:12 }} onError={(ev)=>{ ev.currentTarget.style.display='none'; }} />
                     ) : (
                       String((userName && userName.trim()[0]) || (userEmail && userEmail.trim()[0]) || 'U').toUpperCase()
                     )}
@@ -282,7 +258,7 @@ export default function AppLayout() {
             </div>
           );
         })()}
-  <div className="dashboard-content">
+        <div className="dashboard-content" aria-live="polite">
           <Outlet />
         </div>
       </div>

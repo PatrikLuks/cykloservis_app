@@ -1,25 +1,29 @@
 
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import heroImg from '../img/weather hero.jpg';
-// Dynamic condition icons (single set, no day/night variants)
-import clear from '../img/icons/weather/clear.svg';
-import few_clouds from '../img/icons/weather/few_clouds.svg';
-import scattered_clouds from '../img/icons/weather/scattered_clouds.svg';
-import broken_clouds from '../img/icons/weather/broken_clouds.svg';
-import overcast from '../img/icons/weather/overcast.svg';
-import drizzle from '../img/icons/weather/drizzle.svg';
-import rain_light from '../img/icons/weather/rain_light.svg';
-import rain from '../img/icons/weather/rain.svg';
-import rain_heavy from '../img/icons/weather/rain_heavy.svg';
-import thunderstorm from '../img/icons/weather/thunderstorm.svg';
-import snow from '../img/icons/weather/snow.svg';
-import sleet from '../img/icons/weather/sleet.svg';
-import fog from '../img/icons/weather/fog.svg';
-import dust_sand from '../img/icons/weather/dust_sand.svg';
-import tornado from '../img/icons/weather/tornado.svg';
-import fallback from '../img/icons/weather/fallback.svg';
 import sunriseSvg from '../img/icons/weather/sunrise.svg';
 import sunsetSvg from '../img/icons/weather/sunset.svg';
+import Loader from './Loader';
+
+// Dynamic icon loader map: key -> relative path (kept small; loaded on demand)
+const weatherIconPaths = {
+  clear: () => import('../img/icons/weather/clear.svg'),
+  few_clouds: () => import('../img/icons/weather/few_clouds.svg'),
+  scattered_clouds: () => import('../img/icons/weather/scattered_clouds.svg'),
+  broken_clouds: () => import('../img/icons/weather/broken_clouds.svg'),
+  overcast: () => import('../img/icons/weather/overcast.svg'),
+  drizzle: () => import('../img/icons/weather/drizzle.svg'),
+  rain_light: () => import('../img/icons/weather/rain_light.svg'),
+  rain: () => import('../img/icons/weather/rain.svg'),
+  rain_heavy: () => import('../img/icons/weather/rain_heavy.svg'),
+  thunderstorm: () => import('../img/icons/weather/thunderstorm.svg'),
+  snow: () => import('../img/icons/weather/snow.svg'),
+  sleet: () => import('../img/icons/weather/sleet.svg'),
+  fog: () => import('../img/icons/weather/fog.svg'),
+  dust_sand: () => import('../img/icons/weather/dust_sand.svg'),
+  tornado: () => import('../img/icons/weather/tornado.svg'),
+  fallback: () => import('../img/icons/weather/fallback.svg'),
+};
 
 const Icon = ({ name, size = 24, color = 'currentColor' }) => {
   const props = { width: size, height: size, viewBox: '0 0 24 24', fill: color, 'aria-hidden': true };
@@ -83,25 +87,8 @@ const Icon = ({ name, size = 24, color = 'currentColor' }) => {
   }
 };
 
-// Map OpenWeatherMap condition id + main to our svg key
-const iconMap = {
-  clear,
-  few_clouds,
-  scattered_clouds,
-  broken_clouds,
-  overcast,
-  drizzle,
-  rain_light,
-  rain,
-  rain_heavy,
-  thunderstorm,
-  snow,
-  sleet,
-  fog,
-  dust_sand,
-  tornado,
-  fallback,
-};
+// Cache for loaded modules so repeat icons don't trigger extra network
+const loadedIconCache = new Map();
 
 function mapWeatherCodeToIcon(id, main) {
   if (id >= 200 && id <= 232) return 'thunderstorm'; // Thunderstorm
@@ -135,84 +122,122 @@ function mapWeatherCodeToIcon(id, main) {
   return 'fallback';
 }
 
-const WeatherCard = ({ weather, weatherLoading, weatherError, forecast, forecastLoading, forecastError }) => {
-  const buildDaily = () => {
-    if (!forecast || !forecast.list || !weather) return [];
-    const list = forecast.list;
-    const todayKey = new Date(weather.dt * 1000).toISOString().slice(0,10);
-    const groups = new Map();
-    list.forEach(item => {
-      const d = new Date(item.dt * 1000);
-      const key = d.toISOString().slice(0,10);
-      if (key === todayKey) return;
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(item);
-    });
-    const daily = [];
-    for (const [key, items] of groups.entries()) {
-      items.sort((a,b)=> a.dt - b.dt);
-      let pick = items.find(it => { const h = new Date(it.dt * 1000).getHours(); return h >= 11 && h <= 14; });
-      if (!pick) {
-        pick = items.reduce((best, cur) => {
-          const h = new Date(cur.dt * 1000).getHours();
-          const diff = Math.abs(h - 12);
-          if (!best) return cur;
-          const bestDiff = Math.abs(new Date(best.dt * 1000).getHours() - 12);
-          return diff < bestDiff ? cur : best;
-        }, null);
-      }
-      if (pick) daily.push(pick);
+// Hoisted static styles to avoid re-allocation each render
+const cardStyle = { background:'#fff', borderRadius:14, overflow:'hidden', width:'100%', fontFamily:'inherit', boxShadow:'0 4px 16px -4px rgba(0,0,0,0.12),0 2px 6px -2px rgba(0,0,0,0.08)' };
+const topImgWrapper = { position:'relative', height:190 };
+const heroImgStyle = { width:'100%', height:'100%', objectFit:'cover', objectPosition:'center bottom' };
+const gradientOverlay = { position:'absolute', inset:0, background:'linear-gradient(180deg,rgba(0,0,0,0.05),rgba(0,0,0,0.55))' };
+const locationBadge = { background:'rgba(255,255,255,0.9)', border:'1px solid #d9d9d9', borderRadius:4, padding:'4px 10px', fontSize:12, display:'flex', alignItems:'center', color:'#111', fontWeight:500 };
+const tempBox = { position:'absolute', top:18, right:16, textAlign:'right', color:'#fff', textShadow:'0 1px 2px rgba(0,0,0,0.4)' };
+const bottomBar = { display:'flex', alignItems:'stretch', padding:'10px 14px 12px', gap:28, fontSize:12 };
+const sunCol = { display:'flex', flexDirection:'column', minWidth:140, justifyContent:'center', gap:15 };
+const sunRow = { display:'flex', alignItems:'center', gap:6, color:'#333', fontSize:13, fontWeight:500 };
+const forecastRow = { display:'flex', gap:18, flexWrap:'nowrap', paddingBottom:4 };
+
+const WeatherCardComponent = ({ weather, weatherLoading, weatherError, forecast, forecastLoading, forecastError }) => {
+  const [daily, setDaily] = useState([]);
+  const [mainIconUrl, setMainIconUrl] = useState(null);
+  const [dailyIconUrls, setDailyIconUrls] = useState({}); // index -> url
+  const [iconsLoading, setIconsLoading] = useState(false);
+
+  // Dynamically group forecast into daily picks (offloaded to separate chunk)
+  const computeDaily = useCallback(async () => {
+    if (!forecast || !forecast.list || !weather) { setDaily([]); return; }
+    const module = await import(/* webpackChunkName: "weather-grouping" */ '../utils/forecastGrouping');
+    const result = module.groupForecast(forecast.list, weather.dt);
+    setDaily(result);
+  }, [forecast, weather]);
+
+  useEffect(()=> { computeDaily(); }, [computeDaily]);
+
+  // Helper: load a single icon by key
+  const loadIcon = async (key) => {
+    if (!key) return null;
+    if (loadedIconCache.has(key)) return loadedIconCache.get(key);
+    const loader = weatherIconPaths[key] || weatherIconPaths.fallback;
+    try {
+      const mod = await loader();
+      const url = mod.default || mod; // depending on bundler
+      loadedIconCache.set(key, url);
+      return url;
+    } catch {
+      const fb = (await weatherIconPaths.fallback()).default;
+      loadedIconCache.set(key, fb);
+      return fb;
     }
-    daily.sort((a,b)=> a.dt - b.dt);
-    return daily.slice(0,5);
   };
-  const daily = buildDaily();
-  if (weatherLoading) return <div className="ds-card" style={{ padding:16 }}>Načítám počasí...</div>;
+
+  // Load main current weather icon & daily icons when data changes
+  useEffect(()=> {
+    let cancelled = false;
+    const run = async () => {
+      if (!weather) return;
+      setIconsLoading(true);
+      const key = mapWeatherCodeToIcon(weather.weather?.[0]?.id, weather.weather?.[0]?.main);
+      const mainUrl = await loadIcon(key);
+      if (!cancelled) setMainIconUrl(mainUrl);
+      // Preload daily icons concurrently
+      if (daily.length) {
+        const promises = daily.map(d => loadIcon(mapWeatherCodeToIcon(d.weather[0].id, d.weather[0].main)));
+        const urls = await Promise.all(promises);
+        if (!cancelled) {
+          const mapUrls = {};
+            urls.forEach((u,i)=> { mapUrls[i]=u; });
+          setDailyIconUrls(mapUrls);
+        }
+      }
+      if (!cancelled) setIconsLoading(false);
+    };
+    run();
+    return ()=> { cancelled = true; };
+  }, [weather, daily]);
+
+  if (weatherLoading) return <div className="ds-card" style={{ padding:8 }}><Loader inline message="Načítám počasí…" size={20} /></div>;
   if (weatherError) return <div className="ds-card" style={{ padding:16, color:'#e53935' }}>{weatherError}</div>;
   if (!weather) return null;
-  const weatherIcon = weather.weather && weather.weather[0] && iconMap[mapWeatherCodeToIcon(weather.weather[0].id, weather.weather[0].main)];
+  const weatherIcon = mainIconUrl;
   const sunrise = new Date(weather.sys.sunrise * 1000).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
   const sunset = new Date(weather.sys.sunset * 1000).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
   return (
-    <div className="weather-hero-card" style={{ background:'#fff', borderRadius:14, overflow:'hidden', width:'100%', fontFamily:'inherit', boxShadow:'0 4px 16px -4px rgba(0,0,0,0.12),0 2px 6px -2px rgba(0,0,0,0.08)' }}>
+  <div className="weather-hero-card" style={cardStyle}>
       {/* Image / top section */}
-  <div style={{ position:'relative', height:190 }}>
-  <img src={heroImg} alt="počasí" style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center bottom' }} />
-        <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg,rgba(0,0,0,0.05),rgba(0,0,0,0.55))' }} />
+  <div style={topImgWrapper}>
+  <img src={heroImg} alt="počasí" style={heroImgStyle} />
+        <div style={gradientOverlay} />
         <div style={{ position:'absolute', top:10, left:10, display:'flex', gap:8 }}>
-          <div style={{ background:'rgba(255,255,255,0.9)', border:'1px solid #d9d9d9', borderRadius:4, padding:'4px 10px', fontSize:12, display:'flex', alignItems:'center', color:'#111', fontWeight:500 }}>
+          <div style={locationBadge}>
             {weather.name}
           </div>
         </div>
-        <div style={{ position:'absolute', top:18, right:16, textAlign:'right', color:'#fff', textShadow:'0 1px 2px rgba(0,0,0,0.4)' }}>
+        <div style={tempBox}>
           <div style={{ fontSize:36, fontWeight:500, lineHeight:1 }}>{Math.round(weather.main.temp)}°C</div>
           <div style={{ marginTop:6, display:'flex', alignItems:'center', gap:6, fontSize:13, fontWeight:500, textTransform:'capitalize' }}>
-            {weatherIcon && <img src={weatherIcon} alt={weather.weather[0].description} style={{ width:24, height:24 }} />}
+            {weatherIcon ? <img src={weatherIcon} alt={weather.weather[0].description} style={{ width:24, height:24 }} /> : <span style={{ fontSize:11, opacity:.8 }}>…</span>}
             {weather.weather[0].description}
           </div>
         </div>
       </div>
      {/* Bottom info bar */}
-      <div style={{ display:'flex', alignItems:'stretch', padding:'10px 14px 12px', gap:28, fontSize:12 }}>
-        <div style={{ display:'flex', flexDirection:'column', gap:4, minWidth:140 , justifyContent: 'center', gap: 15 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:6, color:'#333', fontSize:13, fontWeight:500 }}>
+      <div style={bottomBar}>
+        <div style={sunCol}>
+          <div style={sunRow}>
             <img src={sunriseSvg} alt="východ" style={{ width:24, height:24, display:'block' }} />
             <span>Východ: {sunrise}</span>
           </div>
-          <div style={{ display:'flex', alignItems:'center', gap:6, color:'#333', fontSize:13, fontWeight:500 }}>
+          <div style={sunRow}>
             <img src={sunsetSvg} alt="západ" style={{ width:24, height:24, display:'block' }} />
             <span>Západ: {sunset}</span>
           </div>
         </div>
-  <div style={{ display:'flex', gap:18, flexWrap:'nowrap', paddingBottom:4 }}>
+  <div style={forecastRow}>
           {forecastLoading && <span style={{ fontSize:12 }}>Načítám…</span>}
-          {!forecastLoading && !forecastError && daily.map((d,i)=>{
+      {!forecastLoading && !forecastError && daily.map((d,i)=>{
             const labelDate = new Date(d.dt*1000);
             const label = i===0 ? 'Zítra' : labelDate.toLocaleDateString('cs-CZ',{ weekday:'short' });
             return (
               <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, fontSize:12, minWidth:56 }}>
                 <div style={{ fontWeight:600, textTransform:'capitalize', color:'#555' }}>{label}</div>
-                <img src={iconMap[mapWeatherCodeToIcon(d.weather[0].id, d.weather[0].main)]} alt={d.weather[0].description} style={{ width:26, height:26 }} />
+        {dailyIconUrls[i] ? <img src={dailyIconUrls[i]} alt={d.weather[0].description} style={{ width:26, height:26 }} /> : <div style={{ width:26, height:26, display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, opacity:.6 }}>…</div>}
                 <div style={{ fontWeight:600, color:'#222' }}>{Math.round(d.main.temp)}°C</div>
               </div>
             );
@@ -224,4 +249,5 @@ const WeatherCard = ({ weather, weatherLoading, weatherError, forecast, forecast
   );
 };
 
+const WeatherCard = React.memo(WeatherCardComponent);
 export default WeatherCard;

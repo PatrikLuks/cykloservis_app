@@ -13,6 +13,18 @@ const ServiceRequestSchema = new mongoose.Schema({
   assignedDate: { type: Date }, // actual confirmed slot
   priceEstimate: { type: Number },
   firstAvailable: { type: Boolean, default: false },
+  operations: [{
+    code: { type: String }, // reference to catalog item code
+    name: { type: String },
+    minutes: { type: Number },
+    price: { type: Number },
+    status: { type: String, enum: ['planned','in_progress','done'], default: 'planned' }
+  }],
+  componentsDelta: [{
+    componentName: { type: String },
+    action: { type: String, enum: ['install','replace','remove'] },
+    note: { type: String }
+  }],
   events: [{
     at: { type: Date, default: Date.now },
     type: { type: String }, // e.g. status_change, created
@@ -25,5 +37,6 @@ const ServiceRequestSchema = new mongoose.Schema({
 
 ServiceRequestSchema.index({ mechanicId: 1, assignedDate: 1 });
 ServiceRequestSchema.index({ status: 1 });
+ServiceRequestSchema.index({ ownerEmail: 1, createdAt: -1 });
 
 module.exports = mongoose.model('ServiceRequest', ServiceRequestSchema);

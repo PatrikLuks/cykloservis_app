@@ -37,6 +37,17 @@ Všechny níže uvedené endpointy kromě administrátorského hard delete vyža
 ### GET /bikes
 Vrátí seznam nesmazaných (bez `deletedAt`) kol uživatele seřazený desc dle vytvoření.
 
+
+### Pagination (nové)
+
+Volitelně lze použít stránkování pomocí parametru `page` (>=1). Pokud je `page` zadáno, odpověď má formát:
+```
+{
+	"data": [ ...items... ],
+	"pagination": { "page": 1, "limit": 50, "hasNext": true }
+}
+```
+Bez parametru `page` zůstává zachována původní struktura (čisté pole) kvůli zpětné kompatibilitě.
 ### GET /bikes/deleted
 Vrátí seznam soft-smazaných kol (ty, které mají `deletedAt`).
 
@@ -82,4 +93,12 @@ Název | Popis
 - Caching agregovaných statistik (počet servisů, km) pro dashboard.
 - Validace reálné dekomprimované velikosti Base64 vs. deklarovaný MIME.
 - Endpoint pro přidělení / změnu role uživatele (admin promotion) + audit.
+
+## Bezpečnost (souhrn)
+- Rate limiting (globální + create bike + auth sensitive).
+- Content-Security-Policy (default self, omezené zdroje).
+- Volitelný HSTS (`ENABLE_HSTS=true`).
+- Sanitizace vstupu (trim + neutralizace `<script`).
+- Ochrana proti prototype pollution (`__proto__`, `constructor`, `prototype`).
+- Audit log klíčových operací.
 

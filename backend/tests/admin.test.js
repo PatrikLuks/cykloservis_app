@@ -63,8 +63,17 @@ describe('Admin endpoints', () => {
     if (res.statusCode === 200) expect(res.body.role).toBe('admin');
   });
 
-  it('non-admin cannot change role', async () => {
-    const res = await request(app).post(`/admin/users/${targetUserId}/role`).set(auth(userToken)).send({ role: 'user' });
+  it('non-admin cannot change role (fresh user)', async () => {
+    // create a fresh ordinary user not yet promoted
+    const freshEmail = `user_fresh_${Date.now()}@example.com`;
+    await request(app).post('/auth/register').send({ email: freshEmail });
+    const freshUser = await User.findOne({ email: freshEmail });
+    freshUser.isVerified = true; freshUser.password = '$2a$10$abcdefghijklmnopqrstuv';
+    await freshUser.save();
+    await request(app).post('/auth/save-password').send({ email: freshEmail, password: 'Secret123' });
+    const freshLogin = await request(app).post('/auth/login').send({ email: freshEmail, password: 'Secret123' });
+    const freshToken = freshLogin.body.token;
+    const res = await request(app).post(`/admin/users/${targetUserId}/role`).set(auth(freshToken)).send({ role: 'user' });
     expect(res.statusCode).toBe(403);
   });
 });

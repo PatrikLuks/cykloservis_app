@@ -1,7 +1,7 @@
 import React from 'react';
 import '../App.css';
 
-export default function StatCard({ title, value, subtitle, icon, iconBg='#fff', loading=false }) {
+function StatCard({ title, value, subtitle, icon, iconBg='#fff', loading=false }) {
   return (
     <div className={"statcard-root" + (loading ? ' loading' : '')}>
       <div className="statcard-text">
@@ -13,3 +13,5 @@ export default function StatCard({ title, value, subtitle, icon, iconBg='#fff', 
     </div>
   );
 }
+
+export default React.memo(StatCard);

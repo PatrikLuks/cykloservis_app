@@ -6,6 +6,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { requireAuth } = require('../middleware/auth');
+const bodyWhitelist = require('../middleware/bodyWhitelist');
+const logger = require('../utils/logger');
 
 // Helper to derive a stable display name for UI
 function deriveDisplayName(user) {
@@ -50,6 +52,7 @@ router.post('/save-password',
     body('email').isEmail().withMessage('Neplatný email'),
     body('password').isLength({ min: 6 }).withMessage('Heslo musí mít alespoň 6 znaků')
   ],
+  bodyWhitelist(['email','password'], { logFn: (removed)=> logger.warn('AUTH_SAVE_PASSWORD_STRIPPED_KEYS', { removed }) }),
   asyncHandler(async (req, res) => {
     if (!handleValidation(req, res)) return;
     const { email, password } = req.body;
@@ -74,6 +77,7 @@ const { sendMail } = require('../utils/mailer');
 // Zapomenuté heslo - krok 1: odeslání kódu
 router.post('/forgot-password',
   [body('email').isEmail().withMessage('Neplatný email')],
+  bodyWhitelist(['email'], { logFn: (removed)=> logger.warn('AUTH_FORGOT_PASSWORD_STRIPPED_KEYS', { removed }) }),
   asyncHandler(async (req, res) => {
     if (!handleValidation(req, res)) return;
     const { email } = req.body;
@@ -97,6 +101,7 @@ router.post('/verify-reset-code',
     body('email').isEmail().withMessage('Neplatný email'),
     body('code').isLength({ min: 6, max: 6 }).withMessage('Kód musí mít 6 znaků')
   ],
+  bodyWhitelist(['email','code'], { logFn: (removed)=> logger.warn('AUTH_VERIFY_RESET_CODE_STRIPPED_KEYS', { removed }) }),
   asyncHandler(async (req, res) => {
     if (!handleValidation(req, res)) return;
     const { email, code } = req.body;
@@ -114,6 +119,7 @@ router.post('/reset-password',
     body('code').isLength({ min: 6, max: 6 }).withMessage('Kód musí mít 6 znaků'),
     body('newPassword').isLength({ min: 6 }).withMessage('Heslo musí mít alespoň 6 znaků')
   ],
+  bodyWhitelist(['email','code','newPassword'], { logFn: (removed)=> logger.warn('AUTH_RESET_PASSWORD_STRIPPED_KEYS', { removed }) }),
   asyncHandler(async (req, res) => {
     if (!handleValidation(req, res)) return;
     const { email, code, newPassword } = req.body;
@@ -132,6 +138,7 @@ router.post('/reset-password',
 // Nový endpoint: pošle 6-místný kód na email, pokud uživatel neexistuje nebo není ověřený
 router.post('/register',
   [body('email').isEmail().withMessage('Neplatný email')],
+  bodyWhitelist(['email'], { logFn: (removed)=> logger.warn('AUTH_REGISTER_STRIPPED_KEYS', { removed }) }),
   asyncHandler(async (req, res) => {
     if (!handleValidation(req, res)) return;
     const { email } = req.body;
@@ -165,6 +172,7 @@ router.post('/complete-profile',
     body('gender').notEmpty().withMessage('Pohlaví je povinné'),
     body('location').notEmpty().withMessage('Lokalita je povinná')
   ],
+  bodyWhitelist(['email','firstName','lastName','birthDate','gender','location'], { logFn: (removed)=> logger.warn('AUTH_COMPLETE_PROFILE_STRIPPED_KEYS', { removed }) }),
   asyncHandler(async (req, res) => {
     if (!handleValidation(req, res)) return;
     const { email, firstName, lastName, birthDate, gender, location } = req.body;
@@ -216,6 +224,7 @@ router.post('/login',
     body('email').isEmail().withMessage('Neplatný email'),
     body('password').isLength({ min: 6 }).withMessage('Heslo musí mít alespoň 6 znaků')
   ],
+  bodyWhitelist(['email','password'], { logFn: (removed)=> logger.warn('AUTH_LOGIN_STRIPPED_KEYS', { removed }) }),
   asyncHandler(async (req, res) => {
     if (!handleValidation(req, res)) return;
     const { email, password } = req.body;
@@ -248,6 +257,7 @@ router.post('/verify-code',
     body('email').isEmail().withMessage('Neplatný email'),
     body('code').isLength({ min: 6, max: 6 }).withMessage('Kód musí mít 6 znaků')
   ],
+  bodyWhitelist(['email','code'], { logFn: (removed)=> logger.warn('AUTH_VERIFY_CODE_STRIPPED_KEYS', { removed }) }),
   asyncHandler(async (req, res) => {
     if (!handleValidation(req, res)) return;
     const { email, code } = req.body;
@@ -306,6 +316,7 @@ router.patch('/me', requireAuth,
     body('gender').optional().isString(),
     body('location').optional().isString()
   ],
+  bodyWhitelist(['phoneCountryCode','phoneNumber','firstName','lastName','birthDate','gender','location'], { logFn: (removed, allowed, reqCtx)=> logger.warn('AUTH_PATCH_ME_STRIPPED_KEYS', { removed, userId: (reqCtx && reqCtx.user && reqCtx.user.id) }) }),
   asyncHandler(async (req, res) => {
     if (!handleValidation(req, res)) return;
     const updates = {};
