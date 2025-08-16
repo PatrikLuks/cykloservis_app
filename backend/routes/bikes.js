@@ -9,6 +9,14 @@ const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+let fileTypeFromBuffer;
+try {
+  // Dynamické natažení (minimalizace cold startu pokud se upload nepoužije)
+  ({ fileTypeFromBuffer } = require('file-type'));
+} catch (e) {
+  fileTypeFromBuffer = async () => null; // fallback – nebude přísně validovat
+}
 // Service layer
 const {
   createBikeForOwner,
@@ -85,11 +93,12 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 const storage = multer.memoryStorage();
+const ALLOWED_MIME = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
 const upload = multer({
   storage,
   limits: { fileSize: 1_000_000 }, // 1MB
   fileFilter: (req, file, cb) => {
-    if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.mimetype)) {
+    if (!ALLOWED_MIME.includes(file.mimetype)) {
       return cb(new Error('Unsupported image type'));
     }
     cb(null, true);
@@ -315,13 +324,34 @@ router.post(
         details: { field: 'image' },
       });
     try {
-      const ext =
-        req.file.mimetype === 'image/png'
-          ? '.png'
-          : req.file.mimetype === 'image/webp'
-            ? '.webp'
-            : '.jpg';
-      const filename = `${req.params.id}_${Date.now()}${ext}`;
+      // Ověření magic bytes (nezávisle na deklarovaném mimetype)
+      let detectedExt = 'bin';
+      let detectedMime = req.file.mimetype;
+      try {
+        const detected = await fileTypeFromBuffer(req.file.buffer);
+        if (detected && detected.mime) {
+          if (!ALLOWED_MIME.includes(detected.mime)) {
+            return res
+              .status(400)
+              .json({ error: 'Neplatný obsah souboru', code: CODES.VALIDATION_ERROR });
+          }
+          detectedMime = detected.mime;
+          if (detected.ext) detectedExt = detected.ext;
+        } // pokud nedetekováno (null), fallback na deklarovaný mimetype – už byl propuštěn fileFilterem
+      } catch (_) {
+        // fallback – pokud sniff selže, pokračujeme (mimetype už prošel fileFilter)
+      }
+      // Mapování přípon (sjednocení .jpg/.jpeg)
+      if (detectedExt === 'jpeg') detectedExt = 'jpg';
+      if (!['png', 'jpg', 'webp'].includes(detectedExt)) {
+        // fallback podle mimetype pokud sniff nedetekoval ext
+        if (detectedMime === 'image/png') detectedExt = 'png';
+        else if (detectedMime === 'image/webp') detectedExt = 'webp';
+        else detectedExt = 'jpg';
+      }
+      // Sanitizace generovaného názvu (nepoužíváme původní user-provided filename)
+      const rand = crypto.randomBytes(6).toString('hex');
+      const filename = `${req.params.id}_${Date.now()}_${rand}.${detectedExt}`;
       const fullPath = path.join(uploadDir, filename);
       await fs.promises.writeFile(fullPath, req.file.buffer);
       const relative = `/uploads/bikes/${filename}`;
@@ -343,7 +373,11 @@ router.post(
         );
         fs.promises.unlink(oldPath).catch(() => {});
       }
-      auditLog('bike_image_upload', req.user.email, { bikeId: req.params.id, filename });
+      auditLog('bike_image_upload', req.user.email, {
+        bikeId: req.params.id,
+        filename,
+        mime: detectedMime,
+      });
       res.json(current);
     } catch (err) {
       res.status(500).json({ error: 'Server error', code: CODES.SERVER_ERROR });

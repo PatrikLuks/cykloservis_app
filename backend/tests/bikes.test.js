@@ -135,10 +135,13 @@ describe('Bikes API', () => {
     const resCreate = await request(app).post('/bikes').set(auth()).send({ title: 'Upload Test' });
     expect(resCreate.statusCode).toBe(201);
     const bid = resCreate.body.id;
+    // Minimální platný PNG (signature + IHDR chunk s minimální délkou) – 1x1 pixel
+    const minimalPngHex =
+      '89504E470D0A1A0A0000000D494844520000000100000001080200000000000049444154789c63600000020001590cb00d0000000049454e44ae426082';
     const resUp = await request(app)
       .post(`/bikes/${bid}/image`)
       .set(auth())
-      .attach('image', Buffer.from('89504E470D0A1A0A', 'hex'), 'tiny.png');
+      .attach('image', Buffer.from(minimalPngHex, 'hex'), 'tiny.png');
     // očekáváme 200 nebo případně 500 pokud FS selže (pak test failne) – primárně 200
     expect(resUp.statusCode).toBe(200);
     expect(resUp.body).toHaveProperty('id', bid);
