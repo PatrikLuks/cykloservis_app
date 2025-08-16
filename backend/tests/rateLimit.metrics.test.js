@@ -8,14 +8,10 @@ const app = require('..');
 
 describe('rate limit metrics', () => {
   it('exposes rate limit rejection metric after burst', async () => {
-    let saw429 = false;
     for (let i = 0; i < 130; i++) {
       // rychlá sekvence GET na health endpoint
       const r = await request(app).get('/api/health/health');
-      if (r.status === 429) {
-        saw429 = true;
-        break; // stačí první odmítnutí
-      }
+      if (r.status === 429) break; // stačí první odmítnutí
     }
     const metrics = await request(app).get('/api/metrics').expect(200);
     expect(metrics.text).toMatch(/cyklo_rate_limit_rejected_total/);
