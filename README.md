@@ -84,7 +84,6 @@ node backend/scripts/seedTestData.js
      2. Upravte hodnotu `VITE_API_BASE_URL`.
      3. Restartujte frontend (vite načítá env při startu).
 
-
 ## 4. Chyby sledujte v terminálu
 
 Pokud se objeví chyba, zkopírujte ji a pošlete ji vývojáři nebo do chatu s podporou.
@@ -134,15 +133,16 @@ Pro samostatné spuštění backendu nebo frontendu:
 
 Repo má nakonfigurované Git hooky přes Husky:
 
-| Hook | Funkce |
-|------|--------|
-| `pre-commit` | Spustí `lint-staged`, automatický prettier + ESLint fix a následně type-check. |
-| `commit-msg` | Ověření Conventional Commits pomocí `commitlint`. |
-| `pre-push` | Pokud existují změny v `backend/**/*.js`, spustí (podmíněně) backend testy s coverage a diff coverage gate (min. 80 % pokrytí změněných řádků). |
+| Hook         | Funkce                                                                                                                                          |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pre-commit` | Spustí `lint-staged`, automatický prettier + ESLint fix a následně type-check.                                                                  |
+| `commit-msg` | Ověření Conventional Commits pomocí `commitlint`.                                                                                               |
+| `pre-push`   | Pokud existují změny v `backend/**/*.js`, spustí (podmíněně) backend testy s coverage a diff coverage gate (min. 80 % pokrytí změněných řádků). |
 
 Diff coverage znamená: procento řádků, které jste změnili (v porovnání s `origin/main`), jež jsou pokryté testy. Skript: `backend/scripts/diffCoverage.js`.
 
 Chování `pre-push` hooku:
+
 1. Zjistí změněné backend JS soubory vůči `origin/main` (fallback `HEAD~1`).
 2. Pokud žádné – hook se ukončí (rychlý push).
 3. Pokud jsou změny, zkontroluje, zda je třeba znovu generovat coverage (chybí `backend/coverage/lcov.info` nebo změněné testy).
@@ -150,15 +150,46 @@ Chování `pre-push` hooku:
 5. Spustí diff coverage gate s prahem 80 % (override: `DIFF_COV_THRESHOLD=75 git push`).
 
 Lokální ruční spuštění diff coverage (např. pro PR před push):
+
 ```sh
 node backend/scripts/diffCoverage.js --threshold 80
 ```
 
 Možné vylepšení do budoucna:
+
 - Přidat podporu pro TypeScript/TS soubory (pokud se zavedou) – mapování sourcemap.
 - Volitelný mód, který se napojí na `git merge-base` pro složitější rebasované větve.
 - Vystavení diff coverage výsledků jako badge z CI.
 
+### Bezpečný upload obrázků kol
+
+Implementováno v endpointu `POST /bikes/:id/image`:
+
+- Whitelist MIME: `image/png`, `image/jpeg`, `image/jpg`, `image/webp`.
+- Limit velikosti souboru: 1 MB (multer `limits.fileSize`).
+- Server generuje sanitizovaný název: `<bikeId>_<timestamp>_<random>.ext` (žádný user input).
+- Validace magic bytes knihovnou `file-type` (pokud dostupná). V přísném režimu musí být typ detekovatelný.
+- Odstranění starého souboru po úspěšném nahrání nového.
+
+Proměnné prostředí:
+
+| Proměnná              | Výchozí           | Popis                                                                 |
+| --------------------- | ----------------- | --------------------------------------------------------------------- |
+| `STRICT_UPLOAD_MAGIC` | `0`               | Pokud `1`, vyžaduje detekovatelný povolený typ souboru (magic bytes). |
+| `BIKES_UPLOAD_DIR`    | `./uploads/bikes` | Cílový adresář pro ukládání obrázků.                                  |
+| `MAX_JSON_BODY`       | `2mb`             | Limit JSON payloadu (např. Base64 image).                             |
+
+Testy:
+
+- `backend/tests/bikes.test.js` (standardní upload – relaxed režim)
+- `backend/tests/bikes.upload.strict.test.js` (odmítnutí nevalidního PNG v přísném režimu)
+
+Plánované rozšíření:
+
+- Volitelný AV scan (ClamAV / externí služba)
+- Specifický rate limit pro image upload endpoint
+- pHash pro detekci duplicitních obrázků
+- Periodický cleanup osiřelých souborů
 
 ---
 
@@ -265,18 +296,20 @@ chore(ci): úprava cache nastavení
 - Doporučeno pro produkční monitoring s Prometheus/Grafana.
 
 #### Vlastní metriky
-| Název | Typ | Popis |
-|-------|-----|-------|
-| `cyklo_http_request_duration_ms` | Histogram | Latence HTTP dle method/route/status |
-| `cyklo_http_requests_total` | Counter | Počty požadavků dle method/route/status |
-| `cyklo_http_requests_in_flight` | Gauge | Počet paralelně běžících požadavků |
-| `cyklo_http_request_errors_total` | Counter | Chybové odpovědi (4xx/5xx) dle status class |
-| `cyklo_http_status_class_total` | Counter | Odpovědi agregované na status class |
-| `cyklo_apdex_total` / satisfied / tolerating | Counter | Apdex komponenty (T konfig. proměnnou `APDEX_T_MS`) |
-| `cyklo_rate_limit_rejected_total` | Counter | Odmítnuté požadavky rate limiterem |
-| `cyklo_last_request_id_info` | Gauge | Debug: poslední `x-request-id` (nepoužívat pro alerty) |
+
+| Název                                        | Typ       | Popis                                                  |
+| -------------------------------------------- | --------- | ------------------------------------------------------ |
+| `cyklo_http_request_duration_ms`             | Histogram | Latence HTTP dle method/route/status                   |
+| `cyklo_http_requests_total`                  | Counter   | Počty požadavků dle method/route/status                |
+| `cyklo_http_requests_in_flight`              | Gauge     | Počet paralelně běžících požadavků                     |
+| `cyklo_http_request_errors_total`            | Counter   | Chybové odpovědi (4xx/5xx) dle status class            |
+| `cyklo_http_status_class_total`              | Counter   | Odpovědi agregované na status class                    |
+| `cyklo_apdex_total` / satisfied / tolerating | Counter   | Apdex komponenty (T konfig. proměnnou `APDEX_T_MS`)    |
+| `cyklo_rate_limit_rejected_total`            | Counter   | Odmítnuté požadavky rate limiterem                     |
+| `cyklo_last_request_id_info`                 | Gauge     | Debug: poslední `x-request-id` (nepoužívat pro alerty) |
 
 #### Korelační ID
+
 Každý požadavek dostane/propaguje `x-request-id` (UUID). Je vracen v odpovědi a objevuje se v aplikačních logách pro snadné dohledání toku. Gauge `cyklo_last_request_id_info` drží poslední ID jen pro rychlou manuální orientaci (není vhodné jej scrapeovat ve vysoké frekvenci ani na něj stavět alerting).
 
 ---
@@ -324,17 +357,20 @@ Používáme Playwright pro end-to-end scénáře (registrace, ověření kódu,
 Struktura testů: `frontend/tests/e2e`.
 
 Spuštění (lokálně):
+
 ```sh
 cd frontend
 npm run test:e2e
 ```
 
 Rychlý end-to-end běh včetně startu stacku a povolených test-utils:
+
 ```sh
 npm run e2e:local
 ```
 
 Pro plný registrační flow je třeba povolit test-utils endpointy spuštěním backendu s proměnnou:
+
 ```sh
 ENABLE_TEST_UTILS=1 npm run dev
 ```
@@ -348,10 +384,12 @@ Playwright ukládá trace a video pro retry (viz `playwright.config.ts`).
 Pro odlehčení lokálnímu stroji lze synchronizovat zdrojové kódy na vzdálený server pomocí `rsync` skriptů:
 
 Proměnné prostředí:
+
 - `REMOTE_DEV_HOST` (např. `user@server`)
 - `REMOTE_DEV_PATH` (např. `/home/user/cykloapp`)
 
 Příkazy:
+
 ```sh
 npm run remote:sync:backend
 npm run remote:sync:frontend
@@ -359,7 +397,9 @@ npm run remote:sync
 ```
 
 Na vzdáleném serveru poprvé:
+
 ```sh
 cd backend && npm install && cd ../frontend && npm install
 ```
+
 Následně lze spustit docker-compose nebo jednotlivé služby. Pro průběžnou synchronizaci lze použít watch nástroj (např. `fswatch` + opakovaný rsync) dle potřeby.
