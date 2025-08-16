@@ -4,11 +4,17 @@ import './index.css';
 import App from './App';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
+// MUI Date Pickers provider
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import 'dayjs/locale/cs';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="cs">
+      <App />
+    </LocalizationProvider>
   </React.StrictMode>
 );
 

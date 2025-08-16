@@ -1,5 +1,5 @@
-/* Disabled styl pro tlačítka */
-.register-form button:disabled {
+/* Disabled styl pro tlačítka (jen přímý potomek formuláře, ne ikonové buttony uvnitř polí) */
+.register-form > button:disabled {
   background: #e0e0e0 !important;
   color: #aaa !important;
   cursor: not-allowed !important;
@@ -442,7 +442,7 @@ body {
 .register-form input,
 .register-form select {
   border: 1.5px solid #b7b4b4;
-  background: transparent;
+  background-color: transparent;
   margin-bottom: 4px;
   transition: all 0.2s linear;
 
@@ -454,7 +454,7 @@ body {
 .register-form select:hover {
   
   border: 1.5px solid #394ff7;
-  background: transparent;
+  background-color: transparent;
   margin-bottom: 4px;
  
 }
@@ -465,13 +465,145 @@ body {
   border-color: #394ff7 !important;
   outline: none;
   box-shadow: inset 0 0 0 1.5px #394ff7;
+  background-color: transparent !important;
+}
+
+/* Custom dropdown arrow and spacing so the caret isn't at the very edge */
+.register-form select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: 44px; /* space for the arrow */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7l5 6 5-6' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center; /* pull the arrow away from the edge */
+  background-size: 12px 12px;
+}
+
+/* MUI DatePicker (TextField) — make it visually identical to our inputs */
+.register-form .register-input {
+  margin-bottom: 4px; /* same spacing as inputs */
+}
+.register-form .register-input .MuiOutlinedInput-root {
+  height: 48px;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 16px;
+  transition: all 0.2s linear;
+}
+.register-form .register-input .MuiOutlinedInput-notchedOutline {
+  border-width: 1.5px !important;
+  border-color: #b7b4b4 !important;
+  border-style: solid !important;
+  border-radius: 8px !important;
+}
+.register-form .register-input .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: #394ff7 !important;
+}
+.register-form .register-input .MuiOutlinedInput-root:active .MuiOutlinedInput-notchedOutline {
+  border-color: #394ff7 !important;
+}
+.register-form .register-input .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #394ff7 !important;
+}
+.register-form .register-input .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: inset 0 0 0 1.5px #394ff7;
+}
+.register-form .register-input .MuiOutlinedInput-root:focus-within {
+  box-shadow: inset 0 0 0 1.5px #394ff7;
+}
+.register-form .register-input .MuiIconButton-root:hover ~ .MuiOutlinedInput-notchedOutline {
+  border-color: #394ff7 !important;
+}
+.register-form .register-input .MuiOutlinedInput-input {
+  height: 100%;
+  padding: 14px 44px 14px 14px; /* space for calendar icon */
+}
+.register-form .register-input input::placeholder {
+  color: #9e9e9e; opacity: 1;
+}
+.register-form .register-input .MuiOutlinedInput-notchedOutline legend {
+  display: none; /* hide notch */
+}
+.register-form .register-input .MuiIconButton-root {
   background: transparent !important;
+}
+.register-form .register-input .MuiSvgIcon-root {
+  color: #9e9e9e; /* same tone as placeholder */
+}
+.register-form .register-input .MuiPickersSectionList-root {
+  padding: 12px 0 !important; /* vertical align like inputs */
+}
+
+
+
+.css-3x55h1-MuiFormControl-root-MuiPickersTextField-root {
+
+    border-radius: 8px !important;
+
+    border: 1.5px solid #b7b4b4 !important;
+    transition: all 0.2s linear;
+}
+
+.css-3x55h1-MuiFormControl-root-MuiPickersTextField-root:hover {
+
+    border-radius: 8px !important;
+ 
+      border: 1.5px solid #394ff7 !important;
+}
+
+.css-joz0rk-MuiPickersSectionList-section-MuiPickersInputBase-section {
+
+    font-weight: 500 !important;
+    font-family: "Be Vietnam Pro", sans-serif !important;
+}
+
+
+.css-lqwr9g-MuiPickersOutlinedInput-notchedOutline {
+    text-align: left;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    top: 0px;
+    left: 0;
+    margin: 0;
+    padding: 0 8px;
+    pointer-events: none;
+    border-radius: inherit;
+    border-style: solid;
+    border-width: 1.5px;
+    overflow: hidden;
+    min-width: 0%;
+    border-color: rgba(0, 0, 0, 0.23);
+    border-radius: 0px !important;
+}
+
+.css-lqwr9g-MuiPickersOutlinedInput-notchedOutline {
+
+    border-style: none !important;
+
+}
+
+
+.css-1hgcujo-MuiPickersInputBase-root-MuiPickersOutlinedInput-root.Mui-focused .MuiPickersOutlinedInput-notchedOutline {
+    border-style: none;
+
+}
+
+.css-1y4gq5a-MuiPickersSectionList-root-MuiPickersInputBase-sectionsContainer-MuiPickersOutlinedInput-sectionsContainer {
+    padding: 12px 0 !important;
+   transition: all 0.2s linear;
+}
+
+.css-1fb7els-MuiPickersSectionList-root-MuiPickersInputBase-sectionsContainer-MuiPickersOutlinedInput-sectionsContainer {
+
+    padding: 12px 0 !important;
 }
 
 
 
 
-.register-form button {
+.register-form > button {
   background: #394ff7;
   color: #fff;
   border: none;
@@ -492,7 +624,7 @@ body {
   padding: 0 16px;
 }
 
-.register-form button:hover {
+.register-form > button:hover {
   background: #1565c0;
 }
 
@@ -631,5 +763,8 @@ display: flex;
 .code-inputs-group{
       margin: 24px 0px;
 }
+
+
+/* (removed DatePickerDOB custom styles; back to original) */
 
 

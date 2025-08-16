@@ -252,7 +252,7 @@ router.post('/:id/image', [param('id').isMongoId()], requireAuth, upload.single(
 			: (req.file.mimetype === 'image/webp' ? '.webp' : '.jpg');
 		const filename = `${req.params.id}_${Date.now()}${ext}`;
 		const fullPath = path.join(uploadDir, filename);
-		fs.writeFileSync(fullPath, req.file.buffer);
+		await fs.promises.writeFile(fullPath, req.file.buffer);
 		const relative = `/uploads/bikes/${filename}`;
 		// Najdi starý obrázek kvůli úklidu
 		const current = await Bike.findOne({ _id: req.params.id, ownerEmail: req.user.email.toLowerCase() });

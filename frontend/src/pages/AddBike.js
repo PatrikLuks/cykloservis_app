@@ -57,7 +57,22 @@ export default function AddBike() {
       });
       navigate('/my-bikes');
     } catch (e) {
-      setError('Nepodařilo se uložit kolo.');
+      let msg = 'Nepodařilo se uložit kolo.';
+      const resp = e?.response;
+      if (resp) {
+        if (resp.data?.errors?.length) {
+          // express-validator errors
+            msg += ' ' + resp.data.errors.map(er => er.msg || er.param).join(', ');
+        } else if (resp.data?.error) {
+          msg += ' ' + resp.data.error;
+        } else if (resp.status === 401) {
+          msg = 'Session vypršela – přihlaste se znovu.';
+        }
+      } else if (e?.message && e.message.includes('Network')) {
+        msg = 'Server je nedostupný (network error). Spusťte backend.';
+      }
+      console.error('Create bike failed', e);
+      setError(msg);
     } finally {
       setSubmitting(false);
     }

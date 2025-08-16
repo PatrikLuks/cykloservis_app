@@ -11,6 +11,16 @@ import AddBike from './pages/AddBike';
 import BikeDetail from './pages/BikeDetail';
 import EditBike from './pages/EditBike';
 import AppLayout from './components/AppLayout';
+import Profile from './pages/Profile';
+import Orders from './pages/Orders';
+import NewOrder from './pages/NewOrder';
+// Mechanic module (new consolidated folder)
+import MechanicLayout from './mechanic/components/MechanicLayout';
+import MechanicDashboard from './mechanic/pages/MechanicDashboard';
+import MechanicPanel from './mechanic/pages/MechanicPanel';
+import MechanicRequests from './mechanic/pages/MechanicRequests';
+import MechanicRequestDetail from './mechanic/pages/MechanicRequestDetail';
+import MechanicClients from './mechanic/pages/MechanicClients';
 
 function App() {
   return (
@@ -27,6 +37,17 @@ function App() {
           <Route path="/add-bike" element={<AddBike />} />
           <Route path="/bikes/:id" element={<BikeDetail />} />
           <Route path="/bikes/:id/edit" element={<EditBike />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/orders/new" element={<NewOrder />} />
+        </Route>
+        {/* Separate mechanic environment */}
+        <Route element={<MechanicLayout />}>
+          <Route path="/mechanic/dashboard" element={<MechanicDashboard />} />
+          <Route path="/mechanic/profile" element={<MechanicPanel />} />
+          <Route path="/mechanic/requests" element={<MechanicRequests />} />
+          <Route path="/mechanic/requests/:id" element={<MechanicRequestDetail />} />
+          <Route path="/mechanic/clients" element={<MechanicClients />} />
         </Route>
       </Routes>
     </Router>

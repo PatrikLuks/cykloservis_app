@@ -7,6 +7,20 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { requireAuth } = require('../middleware/auth');
 
+// Helper to derive a stable display name for UI
+function deriveDisplayName(user) {
+  if (!user) return 'Uživatel';
+  const first = (user.firstName || '').trim();
+  const last = (user.lastName || '').trim();
+  const full = `${first} ${last}`.trim();
+  if (full) return full;
+  const email = (user.email || '').trim();
+  if (email) {
+    const local = email.split('@')[0];
+    if (local) return local;
+  }
+  return 'Uživatel';
+}
 
 // Helper pro generování 6-místného kódu
 function generateCode() {
@@ -211,7 +225,18 @@ router.post('/login',
     if (!user.password) return res.status(400).json({ message: 'Uživatel nemá nastavené heslo. Dokončete registraci.' });
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Nesprávné heslo' });
-  const token = jwt.sign({ id: user._id, role: user.role || 'user' }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    // Vložit do tokenu i email a displayName pro okamžité zobrazení bez čekání na /auth/me
+    const displayName = deriveDisplayName(user);
+    const rawId = user._id.toString();
+    const fallbackCreated = user.createdAt || new Date(parseInt(rawId.substring(0,8),16)*1000);
+    const token = jwt.sign({
+      id: rawId,
+      role: user.role || 'user',
+      email: user.email,
+      displayName,
+      createdAt: fallbackCreated,
+      registeredAt: fallbackCreated
+    }, process.env.JWT_SECRET, { expiresIn: '7d' });
     auditLog('login', email, { action: 'login' });
     res.json({ token, finallyRegistered: !!user.finallyRegistered });
   })
@@ -247,12 +272,124 @@ router.get('/me', requireAuth, asyncHandler(async (req, res) => {
   const firstName = user.firstName || '';
   const lastName = user.lastName || '';
   const fullName = `${firstName} ${lastName}`.trim();
+  const displayName = deriveDisplayName(user);
+  const rawId = user._id.toString();
+  const fallbackCreated = user.createdAt || new Date(parseInt(rawId.substring(0,8),16)*1000);
   res.json({
-    email: user.email,
+  id: rawId,
+  email: user.email,
     firstName,
     lastName,
     fullName,
+    displayName,
+    birthDate: user.birthDate || null,
+    gender: user.gender || '',
+    location: user.location || '',
+  avatarUrl: user.avatarUrl || '',
+    phoneCountryCode: user.phoneCountryCode || '',
+    phoneNumber: user.phoneNumber || '',
     role: user.role || 'user',
-    finallyRegistered: !!user.finallyRegistered
+  finallyRegistered: !!user.finallyRegistered,
+  createdAt: fallbackCreated || null,
+  registeredAt: fallbackCreated || null
   });
+}));
+
+// Update current user profile (partial)
+router.patch('/me', requireAuth,
+  [
+    body('phoneCountryCode').optional().isString().isLength({ min: 1, max: 6 }),
+    body('phoneNumber').optional().isString().matches(/^\d{4,15}$/).withMessage('Telefonní číslo musí obsahovat pouze číslice (4-15).'),
+    body('firstName').optional().isString(),
+    body('lastName').optional().isString(),
+    body('birthDate').optional().isISO8601().toDate(),
+    body('gender').optional().isString(),
+    body('location').optional().isString()
+  ],
+  asyncHandler(async (req, res) => {
+    if (!handleValidation(req, res)) return;
+    const updates = {};
+    const fields = ['phoneCountryCode','phoneNumber','firstName','lastName','birthDate','gender','location'];
+    fields.forEach(f => { if (req.body[f] !== undefined) updates[f] = req.body[f]; });
+  const user = await User.findByIdAndUpdate(req.user.id, { $set: updates }, { new: true }).lean();
+    if (!user) return res.status(404).json({ message: 'Uživatel nenalezen' });
+    const displayName = deriveDisplayName(user);
+    const rawId = user._id.toString();
+    const fallbackCreated = user.createdAt || new Date(parseInt(rawId.substring(0,8),16)*1000);
+    res.json({
+      id: rawId,
+      email: user.email,
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+      displayName,
+      birthDate: user.birthDate || null,
+      gender: user.gender || '',
+      location: user.location || '',
+      avatarUrl: user.avatarUrl || '',
+      phoneCountryCode: user.phoneCountryCode || '',
+      phoneNumber: user.phoneNumber || '',
+      role: user.role || 'user',
+  finallyRegistered: !!user.finallyRegistered,
+  createdAt: fallbackCreated || null,
+  registeredAt: fallbackCreated || null
+    });
+  })
+);
+
+// Avatar upload
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+const userAvatarDir = process.env.USERS_UPLOAD_DIR || path.join(process.cwd(), 'uploads', 'users');
+if (!fs.existsSync(userAvatarDir)) fs.mkdirSync(userAvatarDir, { recursive: true });
+const userAvatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 1_500_000 },
+  fileFilter: (req, file, cb) => {
+    if (!['image/png','image/jpeg','image/jpg','image/webp'].includes(file.mimetype)) {
+      const err = new Error('unsupported-file-type'); err.code = 'UNSUPPORTED_TYPE'; return cb(err);
+    }
+    cb(null, true);
+  }
+});
+
+router.post('/me/avatar', requireAuth, (req,res,next)=>{
+  userAvatarUpload.single('avatar')(req,res,(err)=>{
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ error: 'Soubor je příliš velký. Max 1.5 MB.' });
+      if (err.code === 'UNSUPPORTED_TYPE') return res.status(400).json({ error: 'Nepodporovaný formát. Povolené: JPG, PNG, WEBP.' });
+      return res.status(400).json({ error: 'Upload selhal' });
+    }
+    next();
+  });
+}, asyncHandler(async (req,res)=>{
+  if(!req.file) return res.status(400).json({ error:'Soubor chybí' });
+  const ext = req.file.mimetype.split('/')[1] || 'png';
+  const fileName = req.user.id + '_' + Date.now() + '.' + ext;
+  await fs.promises.writeFile(path.join(userAvatarDir, fileName), req.file.buffer);
+  const user = await User.findByIdAndUpdate(req.user.id, { avatarUrl: '/uploads/users/' + fileName }, { new:true });
+  if(!user) return res.status(404).json({ error:'Uživatel nenalezen' });
+  res.json({ avatarUrl: user.avatarUrl });
+}));
+
+// Delete avatar
+router.delete('/me/avatar', requireAuth, asyncHandler(async (req,res)=>{
+  const user = await User.findById(req.user.id);
+  if(!user) return res.status(404).json({ error:'Uživatel nenalezen' });
+  if (user.avatarUrl) {
+    try {
+      const fileName = path.basename(user.avatarUrl);
+      const fullPath = path.join(userAvatarDir, fileName);
+      if (fs.existsSync(fullPath)) {
+        try { await fs.promises.unlink(fullPath); } catch(_) {/* ignore */}
+      }
+    } catch (e) {
+      // log but don't fail deletion for user
+      console.warn('AVATAR_DELETE_FAIL', e);
+    }
+    user.avatarUrl = '';
+    await user.save();
+  }
+  res.json({ avatarUrl: '' });
 }));

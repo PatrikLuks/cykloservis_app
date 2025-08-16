@@ -3,6 +3,7 @@ import StatCard from '../components/StatCard';
 import { useDashboardData } from '../hooks/useDashboardData';
 import WeatherCard from '../components/WeatherCard';
 import ShowroomBike from '../img/showroomBike.png';
+import { listBikes } from '../utils/bikesApi';
 import React, { useState, useEffect } from 'react';
 import api from '../utils/apiClient';
 import AdminPanel from './AdminPanel';
@@ -10,7 +11,35 @@ import { useSearchParams } from 'react-router-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import '../App.css';
 import './DashboardCustom.css';
+import { ReactComponent as ArrowBackIcon } from '../img/arrow-icon-back.svg';
+import { ReactComponent as ActivityIcon } from '../img/icons/activity.svg';
+import { fetchRecentActivity } from '../utils/activityApi';
+import { listServiceRequests } from '../utils/serviceRequestsApi';
 
+
+function getInitialUserInfo(){
+  let name = 'Uživatel';
+  let email = 'user@example.com';
+  try {
+    const token = localStorage.getItem('token');
+    if (token){
+      const payload = JSON.parse(atob(token.split('.')[1] || 'e30='));
+      const display = payload.displayName || payload.fullName || `${payload.firstName || ''} ${payload.lastName || ''}`.trim();
+      if (display) name = display.split(' ')[0] || display; // first name for greeting
+      if (payload.email) email = payload.email;
+      return { name, email, initial: (name.trim()[0] || email.trim()[0] || 'U').toUpperCase() };
+    }
+  } catch {}
+  try {
+    const cached = JSON.parse(localStorage.getItem('userProfileCache') || 'null');
+    if (cached){
+      const display = cached.displayName || cached.fullName || `${cached.firstName || ''} ${cached.lastName || ''}`.trim();
+      if (display) name = display.split(' ')[0] || display;
+      if (cached.email) email = cached.email;
+    }
+  } catch {}
+  return { name, email, initial: (name.trim()[0] || email.trim()[0] || 'U').toUpperCase() };
+}
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -24,9 +53,16 @@ const Dashboard = () => {
   const { loading: dashLoading, stats } = useDashboardData();
   const [searchParams] = useSearchParams();
   const tab = searchParams.get('tab') || 'overview';
-  const [userName, setUserName] = useState('Uživatel');
-  const [userEmail, setUserEmail] = useState('user@example.com');
-  const [avatarInitial, setAvatarInitial] = useState('U');
+  const initialUser = getInitialUserInfo();
+  const [userName, setUserName] = useState(initialUser.name);
+  const [userEmail, setUserEmail] = useState(initialUser.email);
+  const [avatarInitial, setAvatarInitial] = useState(initialUser.initial);
+  const [firstBike, setFirstBike] = useState(null);
+  const [bikesLoading, setBikesLoading] = useState(true);
+  const [activity, setActivity] = useState([]);
+  const [activityLoading, setActivityLoading] = useState(true);
+  const [requests, setRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(true);
 
   useEffect(() => {
     // Prefer fetching real user from API; fallback to JWT
@@ -35,9 +71,9 @@ const Dashboard = () => {
         const token = localStorage.getItem('token');
         if (!token) return;
         const { data } = await api.get('/auth/me');
-        const fullName = data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim();
-        const firstOnly = (data.firstName || (fullName || '').split(' ')[0] || '').trim();
-        const name = firstOnly || 'Uživatel';
+  const fullName = data.displayName || data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim();
+  const firstOnly = (data.firstName || (fullName || '').split(' ')[0] || '').trim();
+  const name = firstOnly || fullName || 'Uživatel';
         const email = data.email || 'user@example.com';
         setUserName(name);
         setUserEmail(email);
@@ -59,6 +95,55 @@ const Dashboard = () => {
       }
     };
     load();
+  }, []);
+
+  // Load recent activity (bike create/delete)
+  useEffect(()=>{
+    let mounted = true;
+    (async ()=>{
+      try {
+        setActivityLoading(true);
+        const data = await fetchRecentActivity();
+        if (mounted) setActivity(data);
+      } catch { if (mounted) setActivity([]); }
+      finally { if (mounted) setActivityLoading(false); }
+    })();
+    return ()=> { mounted = false; };
+  }, []);
+
+  // Load service requests (ongoing orders)
+  useEffect(()=>{
+    let mounted = true;
+    (async ()=>{
+      try {
+        setRequestsLoading(true);
+        const data = await listServiceRequests();
+        if (mounted) setRequests(data);
+      } catch { if (mounted) setRequests([]); }
+      finally { if (mounted) setRequestsLoading(false); }
+    })();
+    return ()=> { mounted = false; };
+  }, []);
+
+  // Load bikes and keep the earliest created (assuming API returns newest first -> take last; if oldest first -> take first). We'll just pick the first element for now.
+  useEffect(()=>{
+    (async ()=> {
+      try {
+        setBikesLoading(true);
+        const data = await listBikes();
+        if (Array.isArray(data) && data.length>0) {
+          // Determine earliest by createdAt if present
+          let chosen = data[0];
+          if (data[0] && data[0].createdAt) {
+            chosen = data.slice().sort((a,b)=> new Date(a.createdAt)-new Date(b.createdAt))[0];
+          }
+          setFirstBike(chosen);
+        } else {
+          setFirstBike(null);
+        }
+      } catch { setFirstBike(null); }
+      finally { setBikesLoading(false); }
+    })();
   }, []);
 
   useEffect(() => {
@@ -107,35 +192,13 @@ const Dashboard = () => {
           </div>
         ) : (
         <div className="dashboard-grid">
-          {/* Left Bike summary */}
-          <div className="ds-card" style={{ display:'flex', flexDirection:'column', gap:18 }}>
-            <div>
-              <h2 style={{ fontSize:22, margin:'0 0 12px' }}>Moje Kola</h2>
-              <div style={{ fontSize:20, fontWeight:800 }}>Trek Horské kolo</div>
-              <div className="muted" style={{ fontSize:14, fontWeight:600, marginTop:4 }}>Bike MX 7206P</div>
-            </div>
-            <div style={{ display:'flex', gap:30, fontSize:14 }}>
-              <div>
-                <div className="muted" style={{ fontSize:12, fontWeight:700, textTransform:'uppercase' }}>Celkem Km</div>
-                <div style={{ fontSize:20, fontWeight:800, marginTop:4 }}>157Km</div>
-              </div>
-              <div>
-                <div className="muted" style={{ fontSize:12, fontWeight:700, textTransform:'uppercase' }}>Stav</div>
-                <div style={{ fontSize:20, fontWeight:800, marginTop:4 }}>Perfektní</div>
-              </div>
-            </div>
-            <div style={{ width:'100%', display:'flex', justifyContent:'center', padding:'10px 0 0' }}>
-              <img src={ShowroomBike} alt="Aktuální kolo" style={{ maxWidth:'100%', maxHeight:220, objectFit:'contain', filter:'drop-shadow(0 8px 28px rgba(0,0,0,.25))' }} />
-            </div>
-            <Link to="/my-bikes"><button className="btn-primary" style={buttonStyle}>Spravovat kola</button></Link>
-          </div>
-          {/* Middle stats & recent */}
+          {/* Left column: Hello + My Bikes */}
           <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
-            {/* Hello card */}
+            {/* Hello card (moved above bikes) */}
             <div className="ds-card hello-card" style={{ display:'flex', alignItems:'center', justifyContent:'flex-start', gap:16 }}>
               <div style={{ display:'flex', alignItems:'center', gap:14 }}>
                 <div style={{ width:46, height:46, borderRadius:14, background:'#eff2ff', color:'var(--ds-primary, #394ff7)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:20 }} aria-hidden="true">{avatarInitial}</div>
-                <div>
+                <div className="dashboard-welcome-content">
                   <div style={{ fontSize:24 }}>
                     <span style={{ fontWeight:500 }}>Ahoj, </span>
                     <span style={{ fontWeight:600 }}>{userName}</span>{' '}
@@ -145,21 +208,90 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
+            {/* My Bikes card */}
+            <div className="ds-card" style={{ display:'flex', flexDirection:'column', gap:18, minHeight:340 }}>
+              <h2 style={{ fontSize:22, margin:'0 0 4px' }}>Moje Kola</h2>
+              {bikesLoading ? (
+                <div style={{ display:'flex', flexDirection:'column', flexGrow:1 }}>
+                  <div className="muted" style={{ fontSize:13 }}>Načítám kola…</div>
+                  <div style={{ flexGrow:1 }} />
+                </div>
+              ) : !firstBike ? (
+                <div style={{ display:'flex', flexDirection:'column', flexGrow:1, height:'100%', padding:'10px 4px' }}>
+                  <div style={{ flexGrow:1, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <div className="muted" style={{ fontSize:14, textAlign:'center' }}>Žádné kolo – přidejte první</div>
+                  </div>
+                  <div style={{ marginTop:'auto' }}>
+                    <Link to="/add-bike" style={{ width:'100%', textDecoration:'none' }}>
+                      <button className="btn-cta" style={{ width:'100%', justifyContent:'space-between', display:'flex', alignItems:'center', background:'#394ff7', color:'#fff' }}>
+                        <span>Přidat první kolo</span>
+                        <ArrowBackIcon class="basic-icons" width={20} height={20} style={{ transform:'rotate(180deg)' }} />
+                      </button>
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <div style={{ fontSize:20, fontWeight:800 }}>
+                      {firstBike.type ? (firstBike.type + ' kolo') : firstBike.title}
+                    </div>
+                    <div className="muted" style={{ fontSize:14, fontWeight:600, marginTop:4 }}>{firstBike.model || '—'}</div>
+                  </div>
+                  <div style={{ display:'flex', gap:30, fontSize:14 }}>
+                    <div>
+                      <div className="muted" style={{ fontSize:12, fontWeight:700, textTransform:'uppercase' }}>Rok</div>
+                      <div style={{ fontSize:20, fontWeight:500, marginTop:4 }}>{firstBike.year || '—'}</div>
+                    </div>
+                    <div>
+                      <div className="muted" style={{ fontSize:12, fontWeight:700, textTransform:'uppercase' }}>Minuty</div>
+                      <div style={{ fontSize:20, fontWeight:500, marginTop:4 }}>{firstBike.minutesRidden != null ? firstBike.minutesRidden : '0'}</div>
+                    </div>
+                  </div>
+                  <div style={{ width:'100%', display:'flex', justifyContent:'center', padding:'10px 0 0' }}>
+                    <img src={firstBike.imageUrl || ShowroomBike} alt={firstBike.title} style={{ maxWidth:'100%', maxHeight:220, objectFit:'contain', filter:'drop-shadow(0 8px 28px rgba(0,0,0,.25))' }} onError={(e)=>{ e.currentTarget.src=ShowroomBike; }} />
+                  </div>
+                  <div style={{ marginTop:'auto', width:'100%' }}>
+                    <Link to="/my-bikes" style={{ textDecoration:'none' }}>
+                      <button className="btn-cta" style={{ width:'100%', justifyContent:'space-between', display:'flex', alignItems:'center', background:'#394ff7', color:'#fff' }}>
+                        <span>Spravovat kola</span>
+                        <ArrowBackIcon class="basic-icons" width={20} height={20} style={{ transform:'rotate(180deg)'}} />
+                      </button>
+                    </Link>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+          {/* Middle stats & recent */}
+          <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
             {/* Ongoing orders card */}
             <div className="ds-card" style={{ display:'flex', flexDirection:'column', gap:12 }}>
               <h3 style={{ margin:'0 0 6px', fontSize:22, }}>Probíhající objednávky</h3>
               <div className="muted" style={{ fontSize:13, marginBottom:6 }}>Přehled aktuálních zakázek ve zpracování</div>
               <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                <div style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 12px', border:'1px solid #eef2f7', borderRadius:12, background:'#f9fafb' }}>
-                  <div style={{ width:32, height:32, borderRadius:10, background:'#eff2ff', color:'var(--ds-primary, #394ff7)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800 }} aria-hidden="true">#1</div>
-                  <div style={{ fontWeight:600 }}>Velký servis + čištění pohonu</div>
-                  <div className="chip" style={{ marginLeft:'auto' }}>Probíhá</div>
-                </div>
-                <div style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 12px', border:'1px solid #eef2f7', borderRadius:12, background:'#fff' }}>
-                  <div style={{ width:32, height:32, borderRadius:10, background:'#eff2ff', color:'var(--ds-primary, #394ff7)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800 }} aria-hidden="true">#2</div>
-                  <div style={{ fontWeight:600 }}>Kontrola brzd a seřízení</div>
-                  <div className="chip" style={{ marginLeft:'auto', background:'#fff7ed', borderColor:'#fed7aa', color:'#c2410c' }}>Čeká</div>
-                </div>
+                {requestsLoading && <div className="muted" style={{ fontSize:13 }}>Načítám…</div>}
+                {!requestsLoading && requests.filter(r=>r.status !== 'done' && r.status !== 'cancelled').length === 0 && (
+                  <div className="muted" style={{ fontSize:13 }}>Momentálně nemáte žádné probíhající objednávky.</div>
+                )}
+                {!requestsLoading && requests.filter(r=>r.status !== 'done' && r.status !== 'cancelled').map((reqItem, idx) => {
+                  const badge = `#${idx+1}`;
+                  const waiting = reqItem.status === 'new';
+                  const inProgress = reqItem.status === 'in_progress';
+                  const chipStyle = waiting
+                    ? { background:'#fff7ed', borderColor:'#fed7aa', color:'#c2410c' }
+                    : inProgress
+                      ? { }
+                      : { background:'#e0fbea', borderColor:'#bbf7d0', color:'#166534' };
+                  const chipLabel = waiting ? 'Čeká' : inProgress ? 'Probíhá' : 'Hotovo';
+                  return (
+                    <div key={reqItem._id} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 12px', border:'1px solid #eef2f7', borderRadius:12, background: inProgress ? '#f9fafb' : '#fff' }}>
+                      <div style={{ width:32, height:32, borderRadius:10, background:'#eff2ff', color:'var(--ds-primary, #394ff7)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:500 }} aria-hidden="true">{badge}</div>
+                      <div style={{ fontWeight:500, flexGrow:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{reqItem.title}</div>
+                      <div className="chip" style={{ marginLeft:'auto', ...chipStyle }}>{chipLabel}</div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(260px,1fr))', gap:20 }}>
@@ -202,7 +334,7 @@ const Dashboard = () => {
             <div className="ds-card" style={{ minHeight:220 }}>
               <h3 style={{ margin:'0 0 18px', fontSize:24, }}>Zprávy</h3>
               <div style={{ display:'flex', alignItems:'center', gap:14, background:'#f2f4f7', padding:'14px 16px', borderRadius:12, border:'1px solid #eef2f7' }}>
-                <div style={{ width:42, height:42, borderRadius:'50%', background:'linear-gradient(135deg,#394ff7,#64b5f6)', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:18 }} aria-hidden="true">J</div>
+                <div style={{ width:42, height:42, borderRadius:'50%', background: 'linear-gradient(135deg,#394ff7,#64b5f6)', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:18 }} aria-hidden="true">J</div>
                 <div style={{ fontWeight:600 }}>Jakub Tučák</div>
                 <div style={{ marginLeft:'auto', background:'#ff4d4f', color:'#fff', fontSize:12, fontWeight:600, padding:'4px 8px', borderRadius:12 }}>1</div>
               </div>
@@ -211,7 +343,10 @@ const Dashboard = () => {
           {/* Recent history table full width */}
           <div className="ds-card table-card" style={{ gridColumn:'1 / -1' }}>
             <div className="table-card-header">
-              <h3>Nedávná aktivita</h3>
+              <h3 style={{ display:'flex', alignItems:'center', gap:8, margin:0 }}>
+                <ActivityIcon className="title-icon-svg" width={32} height={32} />
+                <span>Nedávná aktivita</span>
+              </h3>
               <div className="table-card-actions">
                 <input type="search" className="ds-input" placeholder="Hledat..." aria-label="Hledat v aktivitách" />
                 <select className="ds-select" aria-label="Období">
@@ -232,24 +367,30 @@ const Dashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>Dokončen servis</td>
-                    <td className="muted">Trek Horské kolo — Velký servis + výměna brzd</td>
-                    <td>2025-08-08</td>
-                    <td><span className="chip">Hotovo</span></td>
-                  </tr>
-                  <tr>
-                    <td>Naplánován termín</td>
-                    <td className="muted">Kontrola pohonu</td>
-                    <td>2025-08-04</td>
-                    <td><span className="chip" style={{background:'#fff7ed', borderColor:'#fed7aa', color:'#c2410c'}}>Čeká</span></td>
-                  </tr>
-                  <tr>
-                    <td>Přidán nový bicykl</td>
-                    <td className="muted">Gravel Canyon — seriové číslo ABC123</td>
-                    <td>2025-07-29</td>
-                    <td><span className="chip" style={{background:'#eff2ff'}}>Potvrzeno</span></td>
-                  </tr>
+                  {activityLoading && (
+                    <tr><td colSpan={4} className="muted">Načítám aktivitu…</td></tr>
+                  )}
+                  {!activityLoading && activity.length === 0 && (
+                    <tr><td colSpan={4} className="muted">Žádná aktivita.</td></tr>
+                  )}
+                  {!activityLoading && activity.map(item => {
+                    let eventLabel = '';
+                    let statusEl = null;
+                    if (item.action === 'bike_create') { eventLabel = 'Přidáno kolo'; statusEl = <span className="chip" style={{background:'#eff2ff'}}>Nové</span>; }
+                    else if (item.action === 'bike_soft_delete') { eventLabel = 'Odebráno kolo'; statusEl = <span className="chip" style={{background:'#ffe4e6', borderColor:'#fecdd3', color:'#b91c1c'}}>Smazáno</span>; }
+                    else if (item.action === 'bike_restore') { eventLabel = 'Obnoveno kolo'; statusEl = <span className="chip" style={{background:'#e0fbea', borderColor:'#bbf7d0', color:'#166534'}}>Obnoveno</span>; }
+                    else if (item.action === 'bike_hard_delete') { eventLabel = 'Trvale smazáno kolo'; statusEl = <span className="chip" style={{background:'#ffe4e6', borderColor:'#fecdd3', color:'#991b1b'}}>Trvale pryč</span>; }
+                    const date = new Date(item.date).toISOString().slice(0,10);
+                    const bikeId = item.details && item.details.bikeId ? item.details.bikeId : '—';
+                    return (
+                      <tr key={item.id + item.date}>
+                        <td>{eventLabel}</td>
+                        <td className="muted">ID kola: {bikeId}</td>
+                        <td>{date}</td>
+                        <td>{statusEl}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

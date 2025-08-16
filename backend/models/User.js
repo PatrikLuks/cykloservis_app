@@ -10,9 +10,12 @@ const UserSchema = new mongoose.Schema({
   birthDate: { type: Date },
   gender: { type: String },
   location: { type: String },
+  avatarUrl: { type: String },
+  phoneCountryCode: { type: String },
+  phoneNumber: { type: String },
   resetPasswordCode: { type: String },
   finallyRegistered: { type: Boolean, default: false },
-  role: { type: String, default: 'user', enum: ['user','admin'] }
-});
+  role: { type: String, default: 'user', enum: ['user','mechanic','admin'] }
+}, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema);

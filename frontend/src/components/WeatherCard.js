@@ -1,5 +1,25 @@
 
 import React from 'react';
+import heroImg from '../img/weather hero.jpg';
+// Dynamic condition icons (single set, no day/night variants)
+import clear from '../img/icons/weather/clear.svg';
+import few_clouds from '../img/icons/weather/few_clouds.svg';
+import scattered_clouds from '../img/icons/weather/scattered_clouds.svg';
+import broken_clouds from '../img/icons/weather/broken_clouds.svg';
+import overcast from '../img/icons/weather/overcast.svg';
+import drizzle from '../img/icons/weather/drizzle.svg';
+import rain_light from '../img/icons/weather/rain_light.svg';
+import rain from '../img/icons/weather/rain.svg';
+import rain_heavy from '../img/icons/weather/rain_heavy.svg';
+import thunderstorm from '../img/icons/weather/thunderstorm.svg';
+import snow from '../img/icons/weather/snow.svg';
+import sleet from '../img/icons/weather/sleet.svg';
+import fog from '../img/icons/weather/fog.svg';
+import dust_sand from '../img/icons/weather/dust_sand.svg';
+import tornado from '../img/icons/weather/tornado.svg';
+import fallback from '../img/icons/weather/fallback.svg';
+import sunriseSvg from '../img/icons/weather/sunrise.svg';
+import sunsetSvg from '../img/icons/weather/sunset.svg';
 
 const Icon = ({ name, size = 24, color = 'currentColor' }) => {
   const props = { width: size, height: size, viewBox: '0 0 24 24', fill: color, 'aria-hidden': true };
@@ -63,92 +83,143 @@ const Icon = ({ name, size = 24, color = 'currentColor' }) => {
   }
 };
 
-const weatherMainToIcon = (main) => {
-  switch (main) {
-    case 'Clear': return 'sun';
-    case 'Rain': return 'rain';
-    case 'Clouds': return 'cloud';
-    case 'Snow': return 'snow';
-    case 'Thunderstorm': return 'storm';
-    case 'Drizzle': return 'drizzle';
-    default: return 'thermo';
-  }
+// Map OpenWeatherMap condition id + main to our svg key
+const iconMap = {
+  clear,
+  few_clouds,
+  scattered_clouds,
+  broken_clouds,
+  overcast,
+  drizzle,
+  rain_light,
+  rain,
+  rain_heavy,
+  thunderstorm,
+  snow,
+  sleet,
+  fog,
+  dust_sand,
+  tornado,
+  fallback,
 };
 
+function mapWeatherCodeToIcon(id, main) {
+  if (id >= 200 && id <= 232) return 'thunderstorm'; // Thunderstorm
+  if (id >= 300 && id <= 321) return 'drizzle'; // Drizzle
+  if (id >= 500 && id <= 531) { // Rain variations
+    if (id === 500 || id === 501) return 'rain_light';
+    if (id === 502 || id === 503 || id === 504) return 'rain';
+    if (id >= 520) return 'rain_heavy';
+    return 'rain';
+  }
+  if (id >= 600 && id <= 622) { // Snow / Sleet
+    if ([611, 612, 613, 615, 616].includes(id)) return 'sleet';
+    return 'snow';
+  }
+  if (id >= 700 && id <= 781) { // Atmosphere
+    if ([701, 741].includes(id)) return 'fog';
+    if ([731, 751, 761].includes(id)) return 'dust_sand';
+    if (id === 781) return 'tornado';
+    return 'fog';
+  }
+  if (id === 800) return 'clear';
+  if (id === 801) return 'few_clouds';
+  if (id === 802) return 'scattered_clouds';
+  if (id === 803) return 'broken_clouds';
+  if (id === 804) return 'overcast';
+  const mainLower = (main || '').toLowerCase();
+  if (mainLower.includes('cloud')) return 'overcast';
+  if (mainLower.includes('rain')) return 'rain';
+  if (mainLower.includes('snow')) return 'snow';
+  if (mainLower.includes('thunder')) return 'thunderstorm';
+  return 'fallback';
+}
+
 const WeatherCard = ({ weather, weatherLoading, weatherError, forecast, forecastLoading, forecastError }) => {
+  const buildDaily = () => {
+    if (!forecast || !forecast.list || !weather) return [];
+    const list = forecast.list;
+    const todayKey = new Date(weather.dt * 1000).toISOString().slice(0,10);
+    const groups = new Map();
+    list.forEach(item => {
+      const d = new Date(item.dt * 1000);
+      const key = d.toISOString().slice(0,10);
+      if (key === todayKey) return;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(item);
+    });
+    const daily = [];
+    for (const [key, items] of groups.entries()) {
+      items.sort((a,b)=> a.dt - b.dt);
+      let pick = items.find(it => { const h = new Date(it.dt * 1000).getHours(); return h >= 11 && h <= 14; });
+      if (!pick) {
+        pick = items.reduce((best, cur) => {
+          const h = new Date(cur.dt * 1000).getHours();
+          const diff = Math.abs(h - 12);
+          if (!best) return cur;
+          const bestDiff = Math.abs(new Date(best.dt * 1000).getHours() - 12);
+          return diff < bestDiff ? cur : best;
+        }, null);
+      }
+      if (pick) daily.push(pick);
+    }
+    daily.sort((a,b)=> a.dt - b.dt);
+    return daily.slice(0,5);
+  };
+  const daily = buildDaily();
+  if (weatherLoading) return <div className="ds-card" style={{ padding:16 }}>Načítám počasí...</div>;
+  if (weatherError) return <div className="ds-card" style={{ padding:16, color:'#e53935' }}>{weatherError}</div>;
+  if (!weather) return null;
+  const weatherIcon = weather.weather && weather.weather[0] && iconMap[mapWeatherCodeToIcon(weather.weather[0].id, weather.weather[0].main)];
+  const sunrise = new Date(weather.sys.sunrise * 1000).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
+  const sunset = new Date(weather.sys.sunset * 1000).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
   return (
-    <div style={{ position: 'relative', minHeight: 260 }}>
-      {weatherLoading ? (
-        <div className="ds-card" style={{ padding: 16 }}>Načítám počasí...</div>
-      ) : weatherError ? (
-        <div className="ds-card" style={{ padding: 16, color: '#e53935' }}>{weatherError}</div>
-      ) : weather ? (
-        <div className="ds-card" style={{ padding: 18, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, minWidth: 240 }}>
-          <div style={{ color: '#394ff7' }}>
-            <Icon name={weatherMainToIcon(weather.weather[0].main)} size={44} />
-          </div>
-          <div style={{ fontWeight: 800, fontSize: 18, color: '#394ff7', marginBottom: 0 }}>{weather.name}</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: '#1f2937' }}>
-            {Math.round(weather.main.temp)}°C{' '}
-            <span style={{ fontWeight: 500, fontSize: 13, color: '#394ff7' }}>({weather.weather[0].description})</span>
-          </div>
-          <div style={{ fontSize: 13, color: '#4b5563', marginTop: -2 }}>Pocitově: <b>{Math.round(weather.main.feels_like)}°C</b></div>
-          <div style={{ display: 'flex', gap: 12, margin: '8px 0', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#394ff7', fontWeight: 700 }} title="Vlhkost vzduchu">
-              <Icon name="humidity" size={16} /> {weather.main.humidity}%
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#394ff7', fontWeight: 700 }} title="Rychlost větru">
-              <Icon name="wind" size={16} /> {Math.round(weather.wind.speed)} m/s
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#394ff7', fontWeight: 700 }} title="Tlak vzduchu">
-              <Icon name="pressure" size={16} /> {weather.main.pressure} hPa
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#394ff7', fontWeight: 700 }} title="Viditelnost">
-              <Icon name="visibility" size={16} /> {weather.visibility ? (weather.visibility / 1000).toFixed(1) : '-'} km
-            </div>
-          </div>
-          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2, display: 'flex', gap: 10, justifyContent: 'center' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Icon name="sunrise" size={16} color="#394ff7" />
-              {new Date(weather.sys.sunrise * 1000).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
-            </span>
-            <span>|</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Icon name="sunset" size={16} color="#394ff7" />
-              {new Date(weather.sys.sunset * 1000).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          </div>
-          <div style={{ marginTop: 12, width: '100%' }}>
-            <div style={{ fontWeight: 700, fontSize: 14, color: '#394ff7', marginBottom: 6 }}>Předpověď na další dny:</div>
-            {forecastLoading ? (
-              <div style={{ fontSize: 13, color: '#6b7280' }}>Načítám předpověď...</div>
-            ) : forecastError ? (
-              <div style={{ fontSize: 13, color: '#e53935' }}>{forecastError}</div>
-            ) : forecast && forecast.list ? (
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: 4 }}>
-                {forecast.list.filter((item, idx) => [8, 16, 24, 32].includes(idx)).map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="ds-card"
-                    style={{ padding: '8px 10px', minWidth: 92, textAlign: 'center', fontSize: 12 }}
-                  >
-                    <div style={{ fontWeight: 700, color: '#394ff7', fontSize: 12 }}>
-                      {new Date(item.dt * 1000).toLocaleDateString('cs-CZ', { weekday: 'short', day: '2-digit', month: '2-digit' })}
-                    </div>
-                    <div style={{ margin: '4px 0', color: '#394ff7' }}>
-                      <Icon name={weatherMainToIcon(item.weather[0].main)} size={24} />
-                    </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#1f2937' }}>{Math.round(item.main.temp)}°C</div>
-                    <div style={{ fontSize: 11, color: '#6b7280' }}>{item.weather[0].description}</div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ fontSize: 13, color: '#6b7280' }}>Předpověď není dostupná.</div>
-            )}
+    <div className="weather-hero-card" style={{ background:'#fff', borderRadius:14, overflow:'hidden', width:'100%', fontFamily:'inherit', boxShadow:'0 4px 16px -4px rgba(0,0,0,0.12),0 2px 6px -2px rgba(0,0,0,0.08)' }}>
+      {/* Image / top section */}
+  <div style={{ position:'relative', height:190 }}>
+  <img src={heroImg} alt="počasí" style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center bottom' }} />
+        <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg,rgba(0,0,0,0.05),rgba(0,0,0,0.55))' }} />
+        <div style={{ position:'absolute', top:10, left:10, display:'flex', gap:8 }}>
+          <div style={{ background:'rgba(255,255,255,0.9)', border:'1px solid #d9d9d9', borderRadius:4, padding:'4px 10px', fontSize:12, display:'flex', alignItems:'center', color:'#111', fontWeight:500 }}>
+            {weather.name}
           </div>
         </div>
-      ) : null}
+        <div style={{ position:'absolute', top:18, right:16, textAlign:'right', color:'#fff', textShadow:'0 1px 2px rgba(0,0,0,0.4)' }}>
+          <div style={{ fontSize:36, fontWeight:500, lineHeight:1 }}>{Math.round(weather.main.temp)}°C</div>
+          <div style={{ marginTop:6, display:'flex', alignItems:'center', gap:6, fontSize:13, fontWeight:500, textTransform:'capitalize' }}>
+            {weatherIcon && <img src={weatherIcon} alt={weather.weather[0].description} style={{ width:24, height:24 }} />}
+            {weather.weather[0].description}
+          </div>
+        </div>
+      </div>
+     {/* Bottom info bar */}
+      <div style={{ display:'flex', alignItems:'stretch', padding:'10px 14px 12px', gap:28, fontSize:12 }}>
+        <div style={{ display:'flex', flexDirection:'column', gap:4, minWidth:140 , justifyContent: 'center', gap: 15 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:6, color:'#333', fontSize:13, fontWeight:500 }}>
+            <img src={sunriseSvg} alt="východ" style={{ width:24, height:24, display:'block' }} />
+            <span>Východ: {sunrise}</span>
+          </div>
+          <div style={{ display:'flex', alignItems:'center', gap:6, color:'#333', fontSize:13, fontWeight:500 }}>
+            <img src={sunsetSvg} alt="západ" style={{ width:24, height:24, display:'block' }} />
+            <span>Západ: {sunset}</span>
+          </div>
+        </div>
+  <div style={{ display:'flex', gap:18, flexWrap:'nowrap', paddingBottom:4 }}>
+          {forecastLoading && <span style={{ fontSize:12 }}>Načítám…</span>}
+          {!forecastLoading && !forecastError && daily.map((d,i)=>{
+            const labelDate = new Date(d.dt*1000);
+            const label = i===0 ? 'Zítra' : labelDate.toLocaleDateString('cs-CZ',{ weekday:'short' });
+            return (
+              <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, fontSize:12, minWidth:56 }}>
+                <div style={{ fontWeight:600, textTransform:'capitalize', color:'#555' }}>{label}</div>
+                <img src={iconMap[mapWeatherCodeToIcon(d.weather[0].id, d.weather[0].main)]} alt={d.weather[0].description} style={{ width:26, height:26 }} />
+                <div style={{ fontWeight:600, color:'#222' }}>{Math.round(d.main.temp)}°C</div>
+              </div>
+            );
+          })}
+          {!forecastLoading && forecastError && <span style={{ color:'#ff6b6b', fontSize:12 }}>{forecastError}</span>}
+        </div>
+      </div>
     </div>
   );
 };

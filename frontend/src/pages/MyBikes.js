@@ -12,8 +12,7 @@ function minutesToHhMm(mins = 0) {
 export default function MyBikes() {
   const [bikes, setBikes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [deleted, setDeleted] = useState([]);
-  const [showDeleted, setShowDeleted] = useState(false);
+  // Removed deleted bikes toggle/button
   const [uploadingId, setUploadingId] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   // Inline formulář byl nahrazen wizardem /add-bike
@@ -24,8 +23,7 @@ export default function MyBikes() {
     try {
       const data = await listBikes();
       setBikes(Array.isArray(data) ? data : []);
-      const d = await listDeletedBikes().catch(()=>[]);
-      setDeleted(Array.isArray(d) ? d : []);
+  // Deleted bikes no longer shown
     } catch (e) {
     } finally {
       setLoading(false);
@@ -98,54 +96,22 @@ export default function MyBikes() {
             <span className="add-bike-pill-icon">＋</span>
             <span>Přidat kolo</span>
           </button>
-          <button className="add-bike-pill" onClick={()=> setShowDeleted(v=>!v)}>
-            <span className="add-bike-pill-icon">🗂</span>
-            <span>{showDeleted ? 'Aktivní' : `Smazaná (${deleted.length})`}</span>
-          </button>
         </header>
         {loading ? (
           <div className="mybikes-loading">Načítám…</div>
-        ) : showDeleted ? (
-          <div className="mybikes-grid">
-            {deleted.map(b => (
-              <div className="bike-card deleted" key={b._id}>
-                <div className="bike-img-area">
-                  <img src={b.imageUrl || '/logo512.png'} alt={b.title} onError={(e)=>{ e.currentTarget.src='/logo512.png'; }} />
-                </div>
-                <div className="bike-body">
-                  <div className="bike-title-row">
-                    <div className="bike-title-text">{b.title}</div>
-                  </div>
-                  <div className="bike-model-text">{b.model}</div>
-                  <div className="bike-meta-row">
-                    <div>
-                      <div className="meta-label">Smazáno</div>
-                      <div className="meta-value bold">{new Date(b.deletedAt).toLocaleDateString()}</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="bike-actions-row">
-                  <button className="bike-action" onClick={() => handleRestore(b._id)}>↺ <span>Obnovit</span></button>
-                  {isAdmin && <button className="bike-action danger" onClick={() => handleHardDelete(b._id)}>💣 <span>Hard</span></button>}
-                </div>
-              </div>
-            ))}
-            {deleted.length === 0 && (
-              <div className="mybikes-empty">Žádná soft-smazaná kola.</div>
-            )}
-          </div>
-        ) : (
+  ) : (
           <div className="mybikes-grid">
             {bikes.map(b => (
               <div className="bike-card" key={b._id}>
                 <div className="bike-img-area">
-                  <img src={b.imageUrl || '/logo512.png'} alt={b.title} onError={(e)=>{ e.currentTarget.src='/logo512.png'; }} />
+                  <img src={b.imageUrl || require('../img/showroomBike.png')} alt={b.title} onError={(e)=>{ e.currentTarget.src=require('../img/showroomBike.png'); }} />
                 </div>
                 <div className="bike-body">
                   <div className="bike-title-row">
-                    <div className="bike-title-text">{b.title}</div>
+                    <div className="bike-title-text">{b.type ? (b.type + ' kolo') : b.title}</div>
                   </div>
-                  <div className="bike-model-text">{b.model}</div>
+                  <div className="bike-model-text">{b.title}</div>
+                  <div className="bike-model-text" style={{ opacity:.7 }}>{b.model}</div>
                   <div className="bike-meta-row">
                     <div>
                       <div className="meta-label">Rok výroby</div>

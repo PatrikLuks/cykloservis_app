@@ -6,6 +6,9 @@ import { useNavigate } from 'react-router-dom';
 import './MultiStepRegister.css';
 import RegisterNavbar from './RegisterNavbar';
 import { getPasswordValidations } from '../utils/passwordValidation';
+// MUI DatePicker
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
 
 const steps = [
   'Vytvořit Účet',
@@ -216,7 +219,7 @@ export default function MultiStepRegister() {
                     {loadingEmail ? <Spinner /> : 'Pokračovat'}
                   </button>
                   <div className="register-or">
-                    <span>Nebo se přihlaste pomocí</span>
+                    <span>Nebo pokračujte pomocí</span>
                     <div className="register-social-row">
                       <div className="register-social-btn google">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/24px-Google_%22G%22_logo.svg.png?20230822192911" alt="Google-logo" />
@@ -362,25 +365,60 @@ export default function MultiStepRegister() {
                   </div>
                   <div className="register-field">
                     <label htmlFor="birthDate" className="register-label">Datum narození</label>
-                    <div className="date-input-wrapper">
-                      <input
-                        type="date"
-                        id="birthDate"
-                        name="birthDate"
-                        placeholder="Datum narození"
-                        value={form.birthDate}
-                        onChange={handleChange}
-                        required
-                        className="styled-date-input"
-                      />
-                      <span className="calendar-icon" aria-hidden="true">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <rect x="3" y="5" width="14" height="12" rx="2" stroke="#888" strokeWidth="1.5"/>
-                          <path d="M7 2V5M13 2V5" stroke="#888" strokeWidth="1.5" strokeLinecap="round"/>
-                          <rect x="7" y="9" width="2" height="2" rx="1" fill="#888"/>
-                        </svg>
-                      </span>
-                    </div>
+                    <DatePicker
+                      label={null}
+                      value={form.birthDate ? dayjs(form.birthDate) : null}
+                      onChange={(newValue) => {
+                        const iso = newValue ? newValue.format('YYYY-MM-DD') : '';
+                        setForm(f => ({ ...f, birthDate: iso }));
+                      }}
+                      format="DD. MM. YYYY"
+                      disableFuture
+            slotProps={{
+                        textField: {
+                          id: 'birthDate',
+                          name: 'birthDate',
+                          placeholder: 'Datum narození',
+                          required: true,
+                          fullWidth: true,
+                          size: 'medium',
+                          variant: 'outlined',
+                          hiddenLabel: true,
+                          InputProps: { notched: false },
+              inputProps: { readOnly: true },
+              className: 'register-input',
+                          sx: {
+                            fontFamily: 'inherit',
+                            mb: '4px',
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: '8px',
+                              height: 48,
+                              backgroundColor: 'transparent',
+                              fontSize: '16px',
+                boxShadow: 'none',
+                transition: 'all 0.2s linear',
+                              '& fieldset': {
+                                borderColor: '#b7b4b4',
+                                borderWidth: '1.5px'
+                              },
+                              '&:hover fieldset': { borderColor: '#394ff7' },
+                              '&.Mui-focused fieldset': { borderColor: '#394ff7' },
+                              '&.Mui-focused': { boxShadow: 'inset 0 0 0 1.5px #394ff7' }
+                            },
+                            '& .MuiOutlinedInput-input': {
+                              height: '100%',
+                              padding: '14px 44px 14px 14px'
+                            },
+                            '& input::placeholder': { color: '#9e9e9e', opacity: 1 },
+                            '& .MuiOutlinedInput-notchedOutline legend': { display: 'none' },
+                            '& .MuiIconButton-root': {
+                              background: 'transparent !important'
+                            },
+                            '& .MuiSvgIcon-root': { color: '#9e9e9e' }
+                          }
+                        }
+                      }}
+                    />
                   </div>
                   <div className="register-field">
                     <label htmlFor="gender" className="register-label">Pohlaví</label>

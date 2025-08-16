@@ -147,7 +147,7 @@ export default function Login() {
                 )}
               </button>
               <div className="register-or">
-                <span>Nebo se přihlaste pomocí</span>
+                <span>Nebo pokračujte pomocí</span>
                 <div className="register-social-row">
                    <div className="register-social-btn google">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/24px-Google_%22G%22_logo.svg.png?20230822192911" alt="Google-logo" />

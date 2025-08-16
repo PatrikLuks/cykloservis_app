@@ -32,7 +32,7 @@ export default function BikeDetail() {
   return (
     <div className="page-pad">
       <h1>{bike.title}</h1>
-      <img style={{maxWidth:300}} src={bike.imageUrl || '/logo512.png'} alt={bike.title} />
+  <img style={{maxWidth:300}} src={bike.imageUrl || require('../img/showroomBike.png')} alt={bike.title} onError={(e)=>{ e.currentTarget.src=require('../img/showroomBike.png'); }} />
       <p><b>Model:</b> {bike.model || '—'}</p>
       <p><b>Rok:</b> {bike.year || '—'}</p>
       <p><b>Odjeté minuty:</b> {bike.minutesRidden}</p>
