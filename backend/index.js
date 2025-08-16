@@ -16,14 +16,17 @@ let limiter;
 let sensitiveLimiter;
 let rateLimit;
 const isTestEnv = !!process.env.JEST_WORKER_ID;
-const enableRateLimit = (!isTestEnv && process.env.PLAYWRIGHT_E2E !== '1') || process.env.FORCE_RATE_LIMIT === '1';
+const enableRateLimit =
+  (!isTestEnv && process.env.PLAYWRIGHT_E2E !== '1') || process.env.FORCE_RATE_LIMIT === '1';
 if (enableRateLimit) {
   rateLimit = require('express-rate-limit');
   const { rateLimitRejectedTotal } = require('./metrics');
   const onLimitReached = () => {
     try {
       rateLimitRejectedTotal.inc();
-    } catch (_) {}
+    } catch (_) {
+      // silent
+    }
   };
   limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minut
@@ -161,8 +164,8 @@ app.use(errorHandler);
 let server;
 if (!process.env.JEST_WORKER_ID) {
   // don't auto-listen under Jest so supertest gets the bare app
-  const PORT = process.env.PORT || 5001;
-  server = app.listen(PORT, () => logger.info({ port: PORT }, 'Server listening'));
+  const { port } = require('./config');
+  server = app.listen(port, () => logger.info({ port }, 'Server listening'));
 }
 
 // Explicit start pro testy aby šla pokrýt větev se server.close v shutdown

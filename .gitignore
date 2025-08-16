@@ -19,6 +19,18 @@ backend.pid
 build/
 dist/
 
+# Test coverage & reports
+coverage/
+backend/coverage/
+frontend/playwright-report/
+
+# Runtime logs
+backend/audit.log
+
+# Uploaded files (runtime artifacts)
+uploads/
+backend/uploads/
+
 # OS
 .DS_Store
 Thumbs.db
