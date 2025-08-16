@@ -19,30 +19,32 @@ const isTestEnv = !!process.env.JEST_WORKER_ID;
 const enableRateLimit =
   (!isTestEnv && process.env.PLAYWRIGHT_E2E !== '1') || process.env.FORCE_RATE_LIMIT === '1';
 if (enableRateLimit) {
+  const { rateLimit: rlCfg } = require('./config');
   rateLimit = require('express-rate-limit');
   const { rateLimitRejectedTotal } = require('./metrics');
   const onLimitReached = () => {
     try {
       rateLimitRejectedTotal.inc();
     } catch (_) {
-      // silent
+      /* silent */
     }
   };
   limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minut
-    max: 100,
+    windowMs: rlCfg.windowMs,
+    max: rlCfg.max,
     standardHeaders: true,
     legacyHeaders: false,
-    handler: (req, res) => {
+    handler: (_req, res) => {
       onLimitReached();
       res.status(429).json({ error: 'Rate limit exceeded', code: 'RATE_LIMIT' });
     },
   });
   sensitiveLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 20,
-    message: 'Příliš mnoho požadavků, zkuste to později.',
-    handler: (req, res) => {
+    windowMs: rlCfg.windowMs,
+    max: rlCfg.sensitiveMax,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (_req, res) => {
       onLimitReached();
       res.status(429).json({ error: 'Rate limit exceeded', code: 'RATE_LIMIT' });
     },

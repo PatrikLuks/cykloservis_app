@@ -66,12 +66,13 @@ function sanitize(payload) {
 
 // Rate limiter pro vytváření kol (parametrizovatelný ENV proměnnou)
 // V testovacím režimu jej vypneme (Jest by jinak hlásil open handles kvůli intervalům uvnitř rate-limiteru)
-const CREATE_BIKE_RATE_MAX = parseInt(process.env.CREATE_BIKE_RATE_MAX || '30', 10);
+const { createBikeRateLimit } = require('../config');
+const CREATE_BIKE_RATE_MAX = createBikeRateLimit.max;
 const isTest = !!process.env.JEST_WORKER_ID;
 const createBikeLimiter = isTest
   ? (req, _res, next) => next()
   : rateLimit({
-      windowMs: 15 * 60 * 1000,
+      windowMs: createBikeRateLimit.windowMs,
       max: CREATE_BIKE_RATE_MAX,
       standardHeaders: true,
       legacyHeaders: false,
@@ -249,7 +250,8 @@ router.put(
         req.params.id,
         sanitize(req.body)
       );
-      if (error === BIKE_SERVICE_ERRORS.NOT_FOUND) return res.status(404).json({ message: 'Not found' });
+      if (error === BIKE_SERVICE_ERRORS.NOT_FOUND)
+        return res.status(404).json({ message: 'Not found' });
       auditLog('bike_update', req.user.email, { bikeId: bike._id });
       res.json(bike);
     } catch (err) {
@@ -276,7 +278,8 @@ router.post('/:id/restore', [param('id').isMongoId()], requireAuth, async (req, 
   if (!handleValidation(req, res)) return;
   try {
     const { bike, error } = await restoreService(req.user.email, req.params.id);
-    if (error === BIKE_SERVICE_ERRORS.NOT_FOUND) return res.status(404).json({ message: 'Not found' });
+    if (error === BIKE_SERVICE_ERRORS.NOT_FOUND)
+      return res.status(404).json({ message: 'Not found' });
     auditLog('bike_restore', req.user.email, { bikeId: bike._id });
     res.json(bike);
   } catch (err) {
