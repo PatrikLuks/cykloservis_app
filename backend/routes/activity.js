@@ -22,7 +22,9 @@ router.get('/', requireAuth, async (req, res) => {
     // Filter for current user + relevant bike actions
     const relevant = cache.data.filter(e => e.userEmail === req.user.email && ['bike_create','bike_soft_delete','bike_restore','bike_hard_delete'].includes(e.action));
     // Map to display format
-    const items = relevant.sort((a,b)=> new Date(b.timestamp)-new Date(a.timestamp)).slice(0,25).map(e => ({
+  const rawLimit = parseInt(req.query.limit, 10);
+  const limit = (!isNaN(rawLimit) && rawLimit > 0 && rawLimit <= 50) ? rawLimit : 25;
+  const items = relevant.sort((a,b)=> new Date(b.timestamp)-new Date(a.timestamp)).slice(0, limit).map(e => ({
       id: e.details && e.details.bikeId || e.timestamp,
       action: e.action,
       date: e.timestamp,

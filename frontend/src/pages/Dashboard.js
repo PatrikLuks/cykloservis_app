@@ -103,7 +103,7 @@ const Dashboard = () => {
     (async ()=>{
       try {
         setActivityLoading(true);
-        const data = await fetchRecentActivity();
+  const data = await fetchRecentActivity(5);
         if (mounted) setActivity(data);
       } catch { if (mounted) setActivity([]); }
       finally { if (mounted) setActivityLoading(false); }
