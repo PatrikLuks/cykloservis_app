@@ -47,11 +47,18 @@ describe('Audit log writes', () => {
     expect(d.statusCode).toBe(200);
     const r = await request(app).post(`/bikes/${id}/restore`).set(auth());
     expect(r.statusCode).toBe(200);
-    const endContent = fs.readFileSync(auditPath, 'utf8');
+    // Poll dokud se neobjeví restore záznam nebo timeout 1s
+    let endContent = '';
+    const startTs = Date.now();
+    while (Date.now() - startTs < 1000) {
+      endContent = fs.readFileSync(auditPath, 'utf8');
+      if (/bike_restore/.test(endContent)) break;
+      await new Promise((r) => setTimeout(r, 25));
+    }
     const newLines = endContent
       .trim()
       .split(/\n/)
-      .filter((l) => !startContent.includes(l));
+      .filter((l) => l && !startContent.includes(l));
     const parsed = newLines
       .map((l) => {
         try {
